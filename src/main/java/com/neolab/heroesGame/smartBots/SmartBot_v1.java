@@ -22,10 +22,13 @@ import static com.neolab.heroesGame.smartBots.SelfPlay.MAX_ROUND;
 public class SmartBot_v1 extends Player {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SmartBot_v1.class);
-    private final boolean isLogging = false;
+    private final boolean isLogging = true;
     //id активного игрока, сначала всегда активны мы
     private int playerId;
     private int enemyId;
+    private int depth = 0;
+    private int previousDepth = 0;
+    private Map<Integer, Integer> mapDepthRecursionRoundNumber;
 
     public SmartBot_v1(final int id, final String name) {
         super(id, name);
@@ -33,6 +36,7 @@ public class SmartBot_v1 extends Player {
 
     @Override
     public Answer getAnswer(final BattleArena board) throws HeroExceptions, IOException {
+        mapDepthRecursionRoundNumber = new HashMap<>();
         roundCounter = 0;
         terminalNodes = 0;
         totalNodes = 0;
@@ -66,6 +70,7 @@ public class SmartBot_v1 extends Player {
                     }
                     changeSmartAndRandomPlayers();
                     totalNodes++;
+                    depth++;
                     WinCollector winCollector = getAnswerByGameTree(boardUpdater.getBoard());
                     awList.add(new AnswerAndWin(answer, winCollector));
                 }
@@ -90,6 +95,7 @@ public class SmartBot_v1 extends Player {
                             }
                             changeSmartAndRandomPlayers();
                             totalNodes++;
+                            depth++;
                             WinCollector winCollector = getAnswerByGameTree(boardUpdater.getBoard());
                             awList.add(new AnswerAndWin(answer, winCollector));
                         }
@@ -117,6 +123,7 @@ public class SmartBot_v1 extends Player {
                             }
                             changeSmartAndRandomPlayers();
                             totalNodes++;
+                            depth++;
                             WinCollector winCollector = getAnswerByGameTree(boardUpdater.getBoard());
                             awList.add(new AnswerAndWin(answer, winCollector));
                         }
@@ -128,7 +135,7 @@ public class SmartBot_v1 extends Player {
         System.out.println("Total nodes = " + totalNodes);
         System.out.println("Terminal nodes = " + terminalNodes);
         System.out.println("Round counter = " + roundCounter);
-        System.out.println("Time answer" + (System.currentTimeMillis() - startTime));
+        System.out.println("Time answer = " + (System.currentTimeMillis() - startTime));
         System.out.println();
 
         return getGreedyDecision(awList, WinCollector::getTotalWin).answer;
@@ -137,7 +144,7 @@ public class SmartBot_v1 extends Player {
     public String getStringArmyFirst(final int armySize) {
         //final List<String> armies = CommonFunction.getAllAvailableArmiesCode(armySize);
         //return armies.get(RANDOM.nextInt(armies.size()));
-        return "   fFf";
+        return "    F ";
     }
 
     public String getStringArmySecond(final int armySize, final Army army) {
@@ -147,22 +154,31 @@ public class SmartBot_v1 extends Player {
     /********************************************************************************************************************/
 
      private WinCollector getAnswerByGameTree(final BattleArena board) throws HeroExceptions, IOException {
-         if (totalNodes == 1_000_000){
-             System.out.println("Total nodes = 1_000_000");
+         if(depth > previousDepth){
+             mapDepthRecursionRoundNumber.put(depth, roundCounter);
          }
-
+         previousDepth = depth;
          WinnerType winnerType = someOneWhoWin(board);
          if (winnerType != WinnerType.NONE) {
              changeSmartAndRandomPlayers();
+             depth--;
              return distributeWin(winnerType);
          }
          if (!board.canSomeoneAct()) {
              //todo разобраться с counter
-             roundCounter++;
-             if (roundCounter > MAX_ROUND){
+             if(mapDepthRecursionRoundNumber.size() == depth){
+                 mapDepthRecursionRoundNumber.put(depth, (roundCounter > MAX_ROUND) ? roundCounter : ++roundCounter);
+             }
+             else {
+                 mapDepthRecursionRoundNumber.entrySet().removeIf(item -> item.getKey() > depth);
+                 roundCounter = mapDepthRecursionRoundNumber.get(depth);
+             }
+
+             if (mapDepthRecursionRoundNumber.get(depth) > MAX_ROUND){
                  if(isLogging){
                      LOGGER.info("Поединок закончился ничьей");
                  }
+                 depth--;
                  return distributeWin(WinnerType.DRAW);
              }
              if(isLogging){
@@ -204,6 +220,7 @@ public class SmartBot_v1 extends Player {
                          }
                          changeSmartAndRandomPlayers();
                          totalNodes++;
+                         depth++;
                          WinCollector winCollector = getAnswerByGameTree(boardUpdater.getBoard());
                          awList.add(new AnswerAndWin(answer, winCollector));
                      }
@@ -228,6 +245,7 @@ public class SmartBot_v1 extends Player {
                                  }
                                  changeSmartAndRandomPlayers();
                                  totalNodes++;
+                                 depth++;
                                  WinCollector winCollector = getAnswerByGameTree(boardUpdater.getBoard());
                                  awList.add(new AnswerAndWin(answer, winCollector));
                              }
@@ -255,6 +273,7 @@ public class SmartBot_v1 extends Player {
                                  }
                                  changeSmartAndRandomPlayers();
                                  totalNodes++;
+                                 depth++;
                                  WinCollector winCollector = getAnswerByGameTree(boardUpdater.getBoard());
                                  awList.add(new AnswerAndWin(answer, winCollector));
                              }
@@ -282,6 +301,7 @@ public class SmartBot_v1 extends Player {
              }
              changeSmartAndRandomPlayers();
              totalNodes++;
+             depth++;
              WinCollector winCollector = getAnswerByGameTree(boardUpdater.getBoard());
              awList.add(new AnswerAndWin(randomAnswer, winCollector));
          }
@@ -289,6 +309,7 @@ public class SmartBot_v1 extends Player {
              LOGGER.info("******************************* Конец симуляции *************************************");
          }
          final AnswerAndWin greedyDecision = getGreedyDecision(awList, winCalculator);
+         depth--;
          return greedyDecision.winCollector.catchBrokenProbabilities();
      }
 

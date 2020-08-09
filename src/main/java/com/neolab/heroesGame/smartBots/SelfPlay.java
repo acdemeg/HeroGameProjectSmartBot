@@ -136,7 +136,7 @@ public class SelfPlay {
         Player randomBot = new PlayerBot(2, "randomBot");
         SelfPlay selfPlay = new SelfPlay(smartBot_v1, randomBot);
 
-        final int numGames = 100;
+        final int numGames = 1;
         for (int i = 0; i < numGames; i++) {
             if(i % 2 == 0){
                 selfPlay.prepareForBattle(randomBot, smartBot_v1);
