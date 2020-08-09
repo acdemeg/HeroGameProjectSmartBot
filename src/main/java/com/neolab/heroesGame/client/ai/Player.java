@@ -13,6 +13,7 @@ public abstract class Player {
     private final int id;
     protected int totalNodes = 0;
     protected int terminalNodes = 0;
+    protected int roundCounter = 0;
     protected static final double EPS = 1.0e-9;
 
     private final String name;

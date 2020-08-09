@@ -15,14 +15,16 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.ToDoubleFunction;
 
 import static com.neolab.heroesGame.smartBots.SelfPlay.MAX_ROUND;
 
 public class SmartBot_v1 extends Player {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SmartBot_v1.class);
+    private final boolean isLogging = false;
     //id активного игрока, сначала всегда активны мы
-    private int playerId = this.getId();
+    private int playerId;
     private int enemyId;
 
     public SmartBot_v1(final int id, final String name) {
@@ -31,16 +33,105 @@ public class SmartBot_v1 extends Player {
 
     @Override
     public Answer getAnswer(final BattleArena board) throws HeroExceptions, IOException {
+        roundCounter = 0;
         terminalNodes = 0;
         totalNodes = 0;
-        final long startTime = System.currentTimeMillis();
+        playerId = this.getId();
         enemyId = getEnemyId(board);
-        Answer answer = getAnswerByGameTree(board);
+        final long startTime = System.currentTimeMillis();
+        if(isLogging){
+            LOGGER.info("******************************* Начинается симуляция *************************************");
+        }
+
+        final List<AnswerAndWin> awList = new ArrayList<>();
+        final Set<SquareCoordinate> availableHeroes = getAvailableHeroes(board);
+        for(SquareCoordinate heroCoord : availableHeroes){
+
+            for(Enum<HeroActions> action : HeroActions.values()){
+
+                final Hero activeHero = getActiveHero(board, heroCoord);
+
+                if(action == HeroActions.DEFENCE){
+                    playerId = this.getId();
+                    if(isLogging){
+                        board.toLog();
+                    }
+                    final BattleArena copy = board.getCopy();
+                    final BoardUpdater boardUpdater = new BoardUpdater(playerId, enemyId, copy);
+                    Answer answer = new Answer(heroCoord, HeroActions.DEFENCE, new SquareCoordinate(-1,-1), playerId);
+                    answer.toLog();
+                    boardUpdater.toAct(answer);
+                    if(isLogging){
+                        boardUpdater.getActionEffect().toLog();
+                    }
+                    changeSmartAndRandomPlayers();
+                    totalNodes++;
+                    WinCollector winCollector = getAnswerByGameTree(boardUpdater.getBoard());
+                    awList.add(new AnswerAndWin(answer, winCollector));
+                }
+
+                if(action == HeroActions.HEAL){
+                    if(CommonFunction.isUnitHealer(activeHero)){
+                        final Set<SquareCoordinate> availableTargetsForHeal = getAvailableTargets(board, heroCoord);
+                        for(SquareCoordinate target : availableTargetsForHeal){
+                            playerId = this.getId();
+                            if(isLogging){
+                                board.toLog();
+                            }
+                            final BattleArena copy = board.getCopy();
+                            final BoardUpdater boardUpdater = new BoardUpdater(playerId, enemyId, copy);
+                            Answer answer = new Answer(heroCoord, HeroActions.HEAL, target, playerId);
+                            if(isLogging){
+                                answer.toLog();
+                            }
+                            boardUpdater.toAct(answer);
+                            if(isLogging){
+                                boardUpdater.getActionEffect().toLog();
+                            }
+                            changeSmartAndRandomPlayers();
+                            totalNodes++;
+                            WinCollector winCollector = getAnswerByGameTree(boardUpdater.getBoard());
+                            awList.add(new AnswerAndWin(answer, winCollector));
+                        }
+                    }
+                    continue;
+                }
+
+                if(action == HeroActions.ATTACK){
+                    if(!CommonFunction.isUnitHealer(activeHero)){
+                        final Set<SquareCoordinate> availableTargetsForAttack = getAvailableTargets(board, heroCoord);
+                        for(SquareCoordinate target : availableTargetsForAttack){
+                            playerId = this.getId();
+                            if(isLogging){
+                                board.toLog();
+                            }
+                            final BattleArena copy = board.getCopy();
+                            final BoardUpdater boardUpdater = new BoardUpdater(playerId, enemyId, copy);
+                            Answer answer = new Answer(heroCoord, HeroActions.ATTACK, target, playerId);
+                            if(isLogging){
+                                answer.toLog();
+                            }
+                            boardUpdater.toAct(answer);
+                            if(isLogging){
+                                boardUpdater.getActionEffect().toLog();
+                            }
+                            changeSmartAndRandomPlayers();
+                            totalNodes++;
+                            WinCollector winCollector = getAnswerByGameTree(boardUpdater.getBoard());
+                            awList.add(new AnswerAndWin(answer, winCollector));
+                        }
+                    }
+                }
+            }
+        }
 
         System.out.println("Total nodes = " + totalNodes);
         System.out.println("Terminal nodes = " + terminalNodes);
+        System.out.println("Round counter = " + roundCounter);
+        System.out.println("Time answer" + (System.currentTimeMillis() - startTime));
+        System.out.println();
 
-        return answer;
+        return getGreedyDecision(awList, WinCollector::getTotalWin).answer;
     }
 
     public String getStringArmyFirst(final int armySize) {
@@ -55,115 +146,189 @@ public class SmartBot_v1 extends Player {
 
     /********************************************************************************************************************/
 
-     private Answer getAnswerByGameTree(final BattleArena board) throws HeroExceptions, IOException {
+     private WinCollector getAnswerByGameTree(final BattleArena board) throws HeroExceptions, IOException {
          if (totalNodes == 1_000_000){
              System.out.println("Total nodes = 1_000_000");
          }
-         LOGGER.info("******************************* Начинается симуляция *************************************");
-         BattleArena battleArena = board;
-         int roundCounter = 0;
-         if (someOneWhoWin(battleArena)) {
-             terminalNodes++;
-             totalNodes++;
-             return null;
+
+         WinnerType winnerType = someOneWhoWin(board);
+         if (winnerType != WinnerType.NONE) {
+             changeSmartAndRandomPlayers();
+             return distributeWin(winnerType);
          }
-         if (!battleArena.canSomeoneAct()) {
+         if (!board.canSomeoneAct()) {
+             //todo разобраться с counter
              roundCounter++;
-             if (roundCounter > MAX_ROUND) {
-                 LOGGER.info("Поединок закончился ничьей");
-                 terminalNodes++;
-                 totalNodes++;
-                 return null;
+             if (roundCounter > MAX_ROUND){
+                 if(isLogging){
+                     LOGGER.info("Поединок закончился ничьей");
+                 }
+                 return distributeWin(WinnerType.DRAW);
              }
-             LOGGER.info("-----------------Начинается раунд <{}>---------------", roundCounter);
-             battleArena.endRound();
+             if(isLogging){
+                 LOGGER.info("-----------------Начинается раунд <{}>---------------", roundCounter);
+             }
+             board.endRound();
          }
-         if (checkCanMove(playerId, battleArena)) {
-             if(playerId == this.getId()){
-                 final Set<SquareCoordinate> availableHeroes = getAvailableHeroes(battleArena);
 
-                 for(SquareCoordinate heroCoord : availableHeroes){
+         final List<AnswerAndWin> awList = new ArrayList<>();
+         ToDoubleFunction<WinCollector> winCalculator;
 
-                     for(Enum<HeroActions> action : HeroActions.values()){
+         if(!checkCanMove(playerId, board)){
+             changeSmartAndRandomPlayers();
+         }
 
-                         final Hero activeHero = getActiveHero(battleArena, heroCoord);
+         if(playerId == this.getId()){
+             winCalculator = WinCollector::getTotalWin;
+             final Set<SquareCoordinate> availableHeroes = getAvailableHeroes(board);
+             for(SquareCoordinate heroCoord : availableHeroes){
 
-                         if(action == HeroActions.DEFENCE){
-                             battleArena.toLog();
-                             final BattleArena copy = battleArena.getCopy();
-                             final BoardUpdater boardUpdater = new BoardUpdater(playerId, enemyId, copy);
-                             Answer answer = new Answer(heroCoord, HeroActions.DEFENCE, new SquareCoordinate(-1,-1), playerId);
-                             answer.toLog();
-                             boardUpdater.toAct(answer);
+                 for(Enum<HeroActions> action : HeroActions.values()){
+
+                     final Hero activeHero = getActiveHero(board, heroCoord);
+
+                     if(action == HeroActions.DEFENCE){
+                         playerId = this.getId();
+                         if(isLogging){
+                             board.toLog();
+                         }
+                         final BattleArena copy = board.getCopy();
+                         final BoardUpdater boardUpdater = new BoardUpdater(playerId, enemyId, copy);
+                         Answer answer = new Answer(heroCoord, HeroActions.DEFENCE, new SquareCoordinate(-1,-1), playerId);
+                         if(isLogging){
+                            answer.toLog();
+                         }
+                         boardUpdater.toAct(answer);
+                         if(isLogging){
                              boardUpdater.getActionEffect().toLog();
-                             battleArena = boardUpdater.getBoard();
-                             changeSmartAndRandomPlayers();
-                             totalNodes++;
-                             getAnswerByGameTree(battleArena);
                          }
+                         changeSmartAndRandomPlayers();
+                         totalNodes++;
+                         WinCollector winCollector = getAnswerByGameTree(boardUpdater.getBoard());
+                         awList.add(new AnswerAndWin(answer, winCollector));
+                     }
 
-                         if(action == HeroActions.HEAL){
-                             if(CommonFunction.isUnitHealer(activeHero)){
-                                 final Set<SquareCoordinate> availableTargetsForHeal = getAvailableTargets(battleArena, heroCoord);
-                                 for(SquareCoordinate target : availableTargetsForHeal){
-                                     battleArena.toLog();
-                                     final BattleArena copy = battleArena.getCopy();
-                                     final BoardUpdater boardUpdater = new BoardUpdater(playerId, enemyId, copy);
-                                     Answer answer = new Answer(heroCoord, HeroActions.HEAL, target, playerId);
-                                     answer.toLog();
-                                     boardUpdater.toAct(answer);
-                                     boardUpdater.getActionEffect().toLog();
-                                     battleArena = boardUpdater.getBoard();
-                                     changeSmartAndRandomPlayers();
-                                     totalNodes++;
-                                     getAnswerByGameTree(battleArena);
+                     if(action == HeroActions.HEAL){
+                         if(CommonFunction.isUnitHealer(activeHero)){
+                             final Set<SquareCoordinate> availableTargetsForHeal = getAvailableTargets(board, heroCoord);
+                             for(SquareCoordinate target : availableTargetsForHeal){
+                                 playerId = this.getId();
+                                 if(isLogging){
+                                    board.toLog();
                                  }
+                                 final BattleArena copy = board.getCopy();
+                                 final BoardUpdater boardUpdater = new BoardUpdater(playerId, enemyId, copy);
+                                 Answer answer = new Answer(heroCoord, HeroActions.HEAL, target, playerId);
+                                 if(isLogging){
+                                    answer.toLog();
+                                 }
+                                 boardUpdater.toAct(answer);
+                                 if(isLogging){
+                                     boardUpdater.getActionEffect().toLog();
+                                 }
+                                 changeSmartAndRandomPlayers();
+                                 totalNodes++;
+                                 WinCollector winCollector = getAnswerByGameTree(boardUpdater.getBoard());
+                                 awList.add(new AnswerAndWin(answer, winCollector));
                              }
-                             continue;
                          }
+                         continue;
+                     }
 
-                         if(action == HeroActions.ATTACK){
-                             if(!CommonFunction.isUnitHealer(activeHero)){
-                                 final Set<SquareCoordinate> availableTargetsForAttack = getAvailableTargets(battleArena, heroCoord);
-                                 for(SquareCoordinate target : availableTargetsForAttack){
-                                     battleArena.toLog();
-                                     final BattleArena copy = battleArena.getCopy();
-                                     final BoardUpdater boardUpdater = new BoardUpdater(playerId, enemyId, copy);
-                                     Answer answer = new Answer(heroCoord, HeroActions.ATTACK, target, playerId);
-                                     answer.toLog();
-                                     boardUpdater.toAct(answer);
-                                     boardUpdater.getActionEffect().toLog();
-                                     battleArena = boardUpdater.getBoard();
-                                     changeSmartAndRandomPlayers();
-                                     totalNodes++;
-                                     getAnswerByGameTree(battleArena);
+                     if(action == HeroActions.ATTACK){
+                         if(!CommonFunction.isUnitHealer(activeHero)){
+                             final Set<SquareCoordinate> availableTargetsForAttack = getAvailableTargets(board, heroCoord);
+                             for(SquareCoordinate target : availableTargetsForAttack){
+                                 playerId = this.getId();
+                                 if(isLogging){
+                                    board.toLog();
                                  }
+                                 final BattleArena copy = board.getCopy();
+                                 final BoardUpdater boardUpdater = new BoardUpdater(playerId, enemyId, copy);
+                                 Answer answer = new Answer(heroCoord, HeroActions.ATTACK, target, playerId);
+                                 if(isLogging){
+                                     answer.toLog();
+                                 }
+                                 boardUpdater.toAct(answer);
+                                 if(isLogging){
+                                     boardUpdater.getActionEffect().toLog();
+                                 }
+                                 changeSmartAndRandomPlayers();
+                                 totalNodes++;
+                                 WinCollector winCollector = getAnswerByGameTree(boardUpdater.getBoard());
+                                 awList.add(new AnswerAndWin(answer, winCollector));
                              }
                          }
                      }
                  }
              }
-             else {
-                 battleArena.toLog();
-                 final BattleArena copy = battleArena.getCopy();
-                 final BoardUpdater boardUpdater = new BoardUpdater(playerId, this.getId(), copy);
-                 //заглушка на решение соперника
-                 Player randomBot = new PlayerBot(enemyId, "randomBot");
-                 Answer randomAnswer = randomBot.getAnswer(copy);
-                 randomAnswer.toLog();
-                 boardUpdater.toAct(randomAnswer);
-                 boardUpdater.getActionEffect().toLog();
-                 battleArena = boardUpdater.getBoard();
-                 changeSmartAndRandomPlayers();
-                 totalNodes++;
-                 getAnswerByGameTree(battleArena);
-             }
          }
-         changeSmartAndRandomPlayers();
-         getAnswerByGameTree(battleArena);
-         LOGGER.info("******************************* Конец симуляции *************************************");
-         return null;
+         else {
+             if(isLogging){
+                 board.toLog();
+             }
+             winCalculator = w -> 1.0D - w.getTotalWin();
+             final BattleArena copy = board.getCopy();
+             final BoardUpdater boardUpdater = new BoardUpdater(playerId, this.getId(), copy);
+             //заглушка на решение соперника
+             Player randomBot = new PlayerBot(enemyId, "randomBot");
+             Answer randomAnswer = randomBot.getAnswer(copy);
+             if(isLogging){
+                 randomAnswer.toLog();
+             }
+             boardUpdater.toAct(randomAnswer);
+             if(isLogging){
+                 boardUpdater.getActionEffect().toLog();
+             }
+             changeSmartAndRandomPlayers();
+             totalNodes++;
+             WinCollector winCollector = getAnswerByGameTree(boardUpdater.getBoard());
+             awList.add(new AnswerAndWin(randomAnswer, winCollector));
+         }
+         if(isLogging){
+             LOGGER.info("******************************* Конец симуляции *************************************");
+         }
+         final AnswerAndWin greedyDecision = getGreedyDecision(awList, winCalculator);
+         return greedyDecision.winCollector.catchBrokenProbabilities();
      }
+
+    private AnswerAndWin getGreedyDecision(final List<AnswerAndWin> awList,
+                                           final ToDoubleFunction<WinCollector> winCalculator) {
+        if (awList.size() == 1) {
+            return awList.get(0);
+        }
+        final List<AnswerAndWin> potentialWin = new ArrayList<>();
+        potentialWin.add(awList.get(0));
+        for (final AnswerAndWin tmpDecision : awList.subList(1, awList.size())) {
+            final double bestWin = winCalculator.applyAsDouble(potentialWin.get(0).winCollector);
+            final double tmpWin = winCalculator.applyAsDouble(tmpDecision.winCollector);
+            if (bestWin < tmpWin) {
+                potentialWin.clear();
+                potentialWin.add(tmpDecision);
+            } else if (Math.abs(bestWin - tmpWin) < EPS) {
+                potentialWin.add(tmpDecision);
+            }
+        }
+        final int idx = new Random().nextInt(potentialWin.size());
+        return potentialWin.get(idx);
+    }
+
+    protected WinCollector distributeWin(final WinnerType winnerType) {
+        terminalNodes++;
+        totalNodes++;
+        final WinCollector result;
+        if (!winnerType.isTerminalWinnerType()) {
+            throw new IllegalStateException(winnerType + " is not terminal WinnerType");
+        }
+        if (winnerType == WinnerType.DRAW) {
+            result = new WinCollector(0.0D, 0.5D, 0.0D, 0.0D, 1.0D);
+        } else if (winnerType == WinnerType.SMART_BOT) {
+            result = new WinCollector(1.0D, 0.0D, 0.0D, 1.0D, 0.0D);
+        } else {
+            result = new WinCollector(0.0D, 0.0D, 1.0D, 0.0D, 0.0D);
+        }
+        return result.catchBrokenProbabilities();
+    }
 
     private void changeSmartAndRandomPlayers() {
         playerId = (playerId == this.getId()) ? enemyId : this.getId();
@@ -204,16 +369,19 @@ public class SmartBot_v1 extends Player {
          return battleArena.getArmies().keySet().stream().filter(id -> id != this.getId()).findFirst().get();
      }
 
-     private boolean someOneWhoWin(final BattleArena battleArena) {
+     private WinnerType someOneWhoWin(final BattleArena battleArena) {
          for(int armyId : battleArena.getArmies().keySet()){
              if(battleArena.getArmy(armyId).getHeroes().isEmpty()){
                  int playerId = (this.getId() == armyId) ? enemyId : this.getId();
-                 battleArena.toLog();
-                 LOGGER.info("Игрок<{}> выиграл это тяжкое сражение", playerId);
-                 return true;
+                 WinnerType winnerType = (playerId == this.getId()) ? WinnerType.SMART_BOT : WinnerType.ENEMY_BOT;
+                 if(isLogging){
+                     battleArena.toLog();
+                     LOGGER.info("Игрок<{}> выиграл это тяжкое сражение", playerId);
+                 }
+                 return winnerType;
              }
          }
-         return false;
+         return WinnerType.NONE;
      }
 
      private boolean checkCanMove(final Integer id, final BattleArena battleArena) {
