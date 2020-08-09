@@ -26,8 +26,8 @@ public class SmartBot_v1 extends Player {
     //id активного игрока, сначала всегда активны мы
     private int playerId;
     private int enemyId;
-    private int depth = 0;
-    private int previousDepth = 0;
+    private int depth;
+    private int previousDepth;
     private Map<Integer, Integer> mapDepthRecursionRoundNumber;
 
     public SmartBot_v1(final int id, final String name) {
@@ -37,6 +37,8 @@ public class SmartBot_v1 extends Player {
     @Override
     public Answer getAnswer(final BattleArena board) throws HeroExceptions, IOException {
         mapDepthRecursionRoundNumber = new HashMap<>();
+        depth = 0;
+        previousDepth = 0;
         roundCounter = 0;
         terminalNodes = 0;
         totalNodes = 0;
@@ -144,7 +146,7 @@ public class SmartBot_v1 extends Player {
     public String getStringArmyFirst(final int armySize) {
         //final List<String> armies = CommonFunction.getAllAvailableArmiesCode(armySize);
         //return armies.get(RANDOM.nextInt(armies.size()));
-        return "    F ";
+        return "   fFf";
     }
 
     public String getStringArmySecond(final int armySize, final Army army) {
