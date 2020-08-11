@@ -66,6 +66,7 @@ public class SelfPlay {
     public void prepareForBattle(Player botOne, Player botTwo) throws IOException, HeroExceptions {
         currentPlayer = botOne;
         waitingPlayer = botTwo;
+        counter = 0;
 
         String armySize =  HeroConfigManager.getHeroConfig().getProperty("hero.army.size");
         final String player1ArmyResponse = currentPlayer.getStringArmyFirst(Integer.parseInt(armySize));
@@ -126,26 +127,12 @@ public class SelfPlay {
         winRate.merge(winner, 1, Integer::sum);
         battleArena.toLog();
         LOGGER.info("Игрок<{}> выиграл это тяжкое сражение", winner.getName());
+        System.out.println();
+        System.out.println("Игрок " + winner.getName() +   " выиграл это тяжкое сражение");
+        System.out.println();
     }
 
-    public static void main(final String[] args) throws IOException, HeroExceptions {
-
-        final long start = System.nanoTime();
-
-        Player smartBot_v1 = new SmartBot_v1(1, "smartBot");
-        Player randomBot = new PlayerBot(2, "randomBot");
-        SelfPlay selfPlay = new SelfPlay(smartBot_v1, randomBot);
-
-        final int numGames = 10;
-        for (int i = 0; i < numGames; i++) {
-            if(i % 2 == 0){
-                selfPlay.prepareForBattle(randomBot, smartBot_v1);
-            }
-            else selfPlay.prepareForBattle(smartBot_v1, randomBot);
-            selfPlay.gameProcess();
-        }
-
-        //win rate calc
+    private void calcWinRate(long start, int numGames, SelfPlay selfPlay){
         double draw = numGames;
         for (final Map.Entry<Player, Integer> e : selfPlay.winRate.entrySet()) {
             final double winRate = e.getValue() / (double) numGames  * 100;
@@ -163,5 +150,29 @@ public class SelfPlay {
         LOGGER.warn("Игра длилась {}", elapsedTimeInSecond);
         System.out.println("Игра длилась " + elapsedTimeInSecond);
     }
+
+    public static void main(final String[] args) throws IOException, HeroExceptions {
+
+        final long start = System.nanoTime();
+
+        Player smartBot_v1 = new SmartBotMaxMax(1, "smartBot");
+        Player randomBot = new PlayerBot(2, "randomBot");
+        SelfPlay selfPlay = new SelfPlay(smartBot_v1, randomBot);
+
+        final int numGames = 1;
+        for (int i = 0; i < numGames; i++) {
+            System.out.println("************************* Началась игра *******************************");
+            System.out.println();
+            if(i % 2 == 0){
+                selfPlay.prepareForBattle(randomBot, smartBot_v1);
+            }
+            else selfPlay.prepareForBattle(smartBot_v1, randomBot);
+            selfPlay.gameProcess();
+        }
+
+        selfPlay.calcWinRate(start, numGames, selfPlay);
+
+    }
+
 }
 
