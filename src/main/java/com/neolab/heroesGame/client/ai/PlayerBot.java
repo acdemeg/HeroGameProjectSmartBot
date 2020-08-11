@@ -75,6 +75,7 @@ public class PlayerBot extends Player {
         //final List<String> armies = CommonFunction.getAllAvailableArmiesCode(armySize);
         //return armies.get(RANDOM.nextInt(armies.size()));
         return "    F ";
+        //return "ahmfFf";
     }
 
     public String getStringArmySecond(final int armySize, final Army army) {

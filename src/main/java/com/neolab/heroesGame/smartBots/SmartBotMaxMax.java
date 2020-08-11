@@ -14,7 +14,7 @@ import java.util.function.ToDoubleFunction;
 
 import static com.neolab.heroesGame.smartBots.SelfPlay.MAX_ROUND;
 
-public class SmartBotMaxMax extends SmartBotBase {
+public class SmartBotMaxMax extends SmartBotBaseWithGraph {
 
     public SmartBotMaxMax(final int id, final String name) {
         super(id, name);
@@ -102,21 +102,21 @@ public class SmartBotMaxMax extends SmartBotBase {
 
                 final Hero activeHero = getActiveHero(board, heroCoord);
 
-                if(action == HeroActions.DEFENCE){
-                    receiveRatingFromNode(board, awList, this.getId(), enemyId,
-                            new Answer(heroCoord, HeroActions.DEFENCE, new SquareCoordinate(-1,-1), this.getId()));
-                }
-
-                if(action == HeroActions.HEAL){
-                    if(CommonFunction.isUnitHealer(activeHero)){
-                        final Set<SquareCoordinate> availableTargetsForHeal = getAvailableTargets(board, heroCoord);
-                        for(SquareCoordinate target : availableTargetsForHeal){
-                            receiveRatingFromNode(board, awList, this.getId(), enemyId,
-                                    new Answer(heroCoord, HeroActions.HEAL, target, this.getId()));
-                        }
-                    }
-                    continue;
-                }
+//                if(action == HeroActions.DEFENCE){
+//                    receiveRatingFromNode(board, awList, this.getId(), enemyId,
+//                            new Answer(heroCoord, HeroActions.DEFENCE, new SquareCoordinate(-1,-1), this.getId()));
+//                }
+//
+//                if(action == HeroActions.HEAL){
+//                    if(CommonFunction.isUnitHealer(activeHero)){
+//                        final Set<SquareCoordinate> availableTargetsForHeal = getAvailableTargets(board, heroCoord);
+//                        for(SquareCoordinate target : availableTargetsForHeal){
+//                            receiveRatingFromNode(board, awList, this.getId(), enemyId,
+//                                    new Answer(heroCoord, HeroActions.HEAL, target, this.getId()));
+//                        }
+//                    }
+//                    continue;
+//                }
 
                 if(action == HeroActions.ATTACK){
                     if(!CommonFunction.isUnitHealer(activeHero)){

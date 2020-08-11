@@ -27,7 +27,7 @@ public class SmartBotBase extends Player {
     protected int enemyId;
     protected int depth;
     protected int previousDepth;
-    private final boolean isLogging = false;
+    protected final boolean isLogging = false;
     protected Player randomBot;
     protected Map<Integer, Integer> mapDepthRecursionRoundNumber;
     protected static final double EPS = 1.0e-9;
@@ -56,7 +56,7 @@ public class SmartBotBase extends Player {
         }
     }
 
-    protected void printResultsFullSimulation(long startTime){
+    protected void printResultsFullSimulation(long startTime) throws IOException {
         System.out.println("Total nodes = " + totalNodes);
         System.out.println("Terminal nodes = " + terminalNodes);
         System.out.println("Round counter = " + roundCounter);
@@ -85,7 +85,7 @@ public class SmartBotBase extends Player {
         return WinnerType.NONE;
     }
 
-    private Integer getEnemyId(final  BattleArena battleArena){
+    protected Integer getEnemyId(final  BattleArena battleArena){
         return battleArena.getArmies().keySet().stream().filter(id -> id != this.getId()).findFirst().get();
     }
 
@@ -173,7 +173,6 @@ public class SmartBotBase extends Player {
 
     protected WinCollector distributeWin(final WinnerType winnerType) {
         terminalNodes++;
-        totalNodes++;
         final WinCollector result;
         if (!winnerType.isTerminalWinnerType()) {
             throw new IllegalStateException(winnerType + " is not terminal WinnerType");
@@ -197,6 +196,5 @@ public class SmartBotBase extends Player {
     public String getStringArmySecond(final int armySize, final Army army) {
         return getStringArmyFirst(armySize);
     }
-
 }
 
