@@ -14,10 +14,13 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
+import static com.neolab.heroesGame.smartBots.SelfPlay.MAX_ROUND;
+
 public class SmartBotBaseWithGraph extends SmartBotBase {
     private static final Logger LOGGER = LoggerFactory.getLogger(SmartBotBaseWithGraph.class);
     private BufferedWriter dotGraphWriter;
-    boolean isOpenWriter = false;
+    private boolean isOpenWriter = false;
+    private boolean isAllowGraphWrite = false;
 
     public SmartBotBaseWithGraph(final int id, final String name) {
         super(id, name);
@@ -44,14 +47,14 @@ public class SmartBotBaseWithGraph extends SmartBotBase {
                 if(graph.length() == 0){
                     dotGraphWriter = new BufferedWriter(new FileWriter("graph.dot"));
                     isOpenWriter = true;
-                    dotGraphWriter.write("digraph G {\n");
+                    dotGraphWriter.write("digraph G {\nnode [style=filled, fontsize=10,color=lightblue2];\nedge[penwidth = 3, arrowhead=vee,arrowtail=inv, arrowsize=1,color=maroon,fontsize=10,fontcolor=navy]\n");
                 }
             }
             else {
                 if(graph.createNewFile())
                     dotGraphWriter = new BufferedWriter(new FileWriter("graph.dot"));
                     isOpenWriter = true;
-                    dotGraphWriter.write("digraph G {\n");
+                    dotGraphWriter.write("digraph G {\nnode [style=filled, fontsize=10,color=lightblue2];\nedge[penwidth = 3, arrowhead=vee,arrowtail=inv, arrowsize=1,color=maroon,fontsize=10,fontcolor=navy]\n");
             }
         }
         catch(IOException ex){
@@ -62,9 +65,11 @@ public class SmartBotBaseWithGraph extends SmartBotBase {
     @Override
     protected void printResultsFullSimulation(long startTime) throws IOException {
         if(isOpenWriter){
-            dotGraphWriter.write("}");
-            dotGraphWriter.close();
-            isOpenWriter = false;
+            if(isAllowGraphWrite){
+                dotGraphWriter.write("}");
+                dotGraphWriter.close();
+                isOpenWriter = false;
+            }
         }
 
         System.out.println("Total nodes = " + totalNodes);
@@ -72,6 +77,11 @@ public class SmartBotBaseWithGraph extends SmartBotBase {
         System.out.println("Round counter = " + roundCounter);
         System.out.println("Time answer = " + (System.currentTimeMillis() - startTime));
         System.out.println();
+
+        if(totalNodes < 100){
+            isLogging = true;
+            isAllowGraphWrite = true;
+        }
 
         if(isLogging){
             LOGGER.info("******************************* Конец симуляции *************************************");
@@ -81,12 +91,11 @@ public class SmartBotBaseWithGraph extends SmartBotBase {
     }
 
     @Override
-    protected void receiveRatingFromNode(
-            final BattleArena board, final List<AnswerAndWin> awList,
-            int activePlayerId, int waitingPlayerId, Answer answer) throws IOException, HeroExceptions {
+    protected AnswerAndWin receiveRatingFromNode(
+            final BattleArena board, int activePlayerId, int waitingPlayerId, Answer answer) throws IOException, HeroExceptions {
 
         printStepByTree(board, false, " -> ");
-
+        toLogAdditionalInfo();
         toLogBoard(board);
         final BattleArena copy = board.getCopy();
         final BoardUpdater boardUpdater = new BoardUpdater(activePlayerId, waitingPlayerId, copy);
@@ -98,13 +107,10 @@ public class SmartBotBaseWithGraph extends SmartBotBase {
         depth++;
 
         boolean isRoundEnd = isRoundEnd(boardUpdater.getBoard());
-        String node = printStepByTree(boardUpdater.getBoard(), isRoundEnd, ";\n");
-        if(isTerminalNode(boardUpdater.getBoard())){
-            writeStringToGraphWriter(node + "[fillcolor=lightcoral]\n");
-        }
+        printStepByTree(boardUpdater.getBoard(), isRoundEnd, ";\n");
 
         WinCollector winCollector = getAnswerByGameTree(boardUpdater.getBoard());
-        awList.add(new AnswerAndWin(answer, winCollector));
+        return new AnswerAndWin(answer, winCollector);
     }
 
     private boolean isTerminalNode(final BattleArena battleArena) {
@@ -113,15 +119,25 @@ public class SmartBotBaseWithGraph extends SmartBotBase {
                 return true;
             }
         }
-        return false;
+
+        return roundCounter > MAX_ROUND;
     }
 
-    private String printStepByTree(final BattleArena board, final boolean isRoundEnd, final String suffix) throws IOException {
+    private void printStepByTree(final BattleArena board, final boolean isRoundEnd, final String suffix) throws IOException {
+        if(!isAllowGraphWrite)
+            return;
         int round = isRoundEnd ? roundCounter + 1 : roundCounter;
-        String nodeInfo = "\"" + "Round = " + round + "      Depth = " + depth + "      NodeNum = " + totalNodes + "\\n";
-        String node = nodeInfo + GraphPrinter.printNode(board, isRoundEnd) + suffix;
-        writeStringToGraphWriter(node);
-        return node;
+        String nodeInfo = "\"" + "   R=" + round + " D=" + depth + "  TN=" + totalNodes + "\"";
+        String node = GraphPrinter.printNode(board, isRoundEnd);
+        if(suffix.equals(";\n")){
+            writeStringToGraphWriter(node + "[label=" + nodeInfo + "]" + suffix);
+        }
+        else writeStringToGraphWriter(node + suffix);
+
+        if(suffix.equals(";\n") && isTerminalNode(board)){
+            writeStringToGraphWriter(node + "[fillcolor=lightcoral]\n");
+        }
+
     }
 
     private void writeStringToGraphWriter(String string) throws IOException {

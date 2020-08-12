@@ -11,10 +11,11 @@ import com.neolab.heroesGame.server.answers.Answer;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.ToDoubleFunction;
+import java.util.stream.Collectors;
 
 import static com.neolab.heroesGame.smartBots.SelfPlay.MAX_ROUND;
 
-public class SmartBotMaxMax extends SmartBotBaseWithGraph {
+public class SmartBotMaxMax extends SmartBotBase {
 
     public SmartBotMaxMax(final int id, final String name) {
         super(id, name);
@@ -26,11 +27,10 @@ public class SmartBotMaxMax extends SmartBotBaseWithGraph {
         final long startTime = System.currentTimeMillis();
         initializeFullSimulation(board);
 
-        final List<AnswerAndWin> awList = new ArrayList<>();
-        runSimulationForSmartBot(board, awList);
+        final AnswerAndWin aw = runSimulationForSmartBot(board, WinCollector::getTotalWin);
 
         printResultsFullSimulation(startTime);
-        return getGreedyDecision(awList, WinCollector::getTotalWin).answer;
+        return aw.answer;
     }
 
     @Override
@@ -51,11 +51,13 @@ public class SmartBotMaxMax extends SmartBotBaseWithGraph {
 
         if(playerId == this.getId()){
             winCalculator = WinCollector::getTotalWin;
-            runSimulationForSmartBot(board, awList);
+            final AnswerAndWin aw = runSimulationForSmartBot(board, WinCollector::getTotalWin);
+            awList.add(aw);
         }
         else {
             winCalculator = w -> 1.0D - w.getTotalWin();
-            runSimulationForEnemyBot(board, awList);
+            final AnswerAndWin aw = runSimulationForEnemyBot(board,  w -> 1.0D - w.getTotalWin());
+            awList.add(aw);
         }
 
         final AnswerAndWin greedyDecision = getGreedyDecision(awList, winCalculator);
@@ -94,45 +96,96 @@ public class SmartBotMaxMax extends SmartBotBaseWithGraph {
         return null;
     }
 
-    private void runSimulationForSmartBot(final BattleArena board, final List<AnswerAndWin> awList) throws IOException, HeroExceptions {
+    private AnswerAndWin runSimulationForSmartBot(final BattleArena board, final ToDoubleFunction<WinCollector> winCalculator) throws IOException, HeroExceptions {
+        final List<AnswerAndWin> awList = new ArrayList<>();
         final Set<SquareCoordinate> availableHeroes = getAvailableHeroes(board);
         for(SquareCoordinate heroCoord : availableHeroes){
+            playerId = this.getId();
 
             for(Enum<HeroActions> action : HeroActions.values()){
+                playerId = this.getId();
 
                 final Hero activeHero = getActiveHero(board, heroCoord);
 
+                if(action == HeroActions.DEFENCE){
+                    final AnswerAndWin aw = receiveRatingFromNode(board, this.getId(), enemyId,
+                            new Answer(heroCoord, HeroActions.DEFENCE, new SquareCoordinate(-1,-1), this.getId()));
+                    awList.add(aw);
+                }
+
+                if(action == HeroActions.HEAL){
+                    if(CommonFunction.isUnitHealer(activeHero)){
+                        final Set<SquareCoordinate> availableTargetsForHeal = getAvailableTargets(board, heroCoord);
+                        for(SquareCoordinate target : availableTargetsForHeal){
+                            playerId = this.getId();
+                            final AnswerAndWin aw = receiveRatingFromNode(board, this.getId(), enemyId,
+                                    new Answer(heroCoord, HeroActions.HEAL, target, this.getId()));
+                            awList.add(aw);
+                        }
+                    }
+                    continue;
+                }
+
+                if(action == HeroActions.ATTACK){
+                    if(!CommonFunction.isUnitHealer(activeHero)){
+                        final Set<SquareCoordinate> availableTargetsForAttack = getAvailableTargets(board, heroCoord);
+                        for(SquareCoordinate target : availableTargetsForAttack){
+                            playerId = this.getId();
+                            final AnswerAndWin aw = receiveRatingFromNode(board, this.getId(), enemyId,
+                                    new Answer(heroCoord, HeroActions.ATTACK, target, this.getId()));
+                            awList.add(aw);
+                        }
+                    }
+                }
+            }
+        }
+        return getGreedyDecision(awList, winCalculator);
+    }
+
+    private AnswerAndWin runSimulationForEnemyBot(final BattleArena board, final ToDoubleFunction<WinCollector> winCalculator) throws IOException, HeroExceptions {
+        return receiveRatingFromNode(board, enemyId, this.getId(), randomBot.getAnswer(board));
+//        final List<AnswerAndWin> awList = new ArrayList<>();
+//        final Set<SquareCoordinate> availableHeroes = getAvailableHeroes(board);
+//        for(SquareCoordinate heroCoord : availableHeroes){
+//            playerId = enemyId;
+//
+//            for(Enum<HeroActions> action : HeroActions.values()){
+//                playerId = enemyId;
+//                final Hero activeHero = getActiveHero(board, heroCoord);
+//
 //                if(action == HeroActions.DEFENCE){
-//                    receiveRatingFromNode(board, awList, this.getId(), enemyId,
-//                            new Answer(heroCoord, HeroActions.DEFENCE, new SquareCoordinate(-1,-1), this.getId()));
+//                    final AnswerAndWin aw = receiveRatingFromNode(board, enemyId, this.getId(),
+//                            new Answer(heroCoord, HeroActions.DEFENCE, new SquareCoordinate(-1,-1), enemyId));
+//                    awList.add(aw);
 //                }
 //
 //                if(action == HeroActions.HEAL){
 //                    if(CommonFunction.isUnitHealer(activeHero)){
 //                        final Set<SquareCoordinate> availableTargetsForHeal = getAvailableTargets(board, heroCoord);
 //                        for(SquareCoordinate target : availableTargetsForHeal){
-//                            receiveRatingFromNode(board, awList, this.getId(), enemyId,
-//                                    new Answer(heroCoord, HeroActions.HEAL, target, this.getId()));
+//                            playerId = enemyId;
+//                            final AnswerAndWin aw = receiveRatingFromNode(board, enemyId, this.getId(),
+//                                    new Answer(heroCoord, HeroActions.HEAL, target, enemyId));
+//                            awList.add(aw);
 //                        }
 //                    }
 //                    continue;
 //                }
-
-                if(action == HeroActions.ATTACK){
-                    if(!CommonFunction.isUnitHealer(activeHero)){
-                        final Set<SquareCoordinate> availableTargetsForAttack = getAvailableTargets(board, heroCoord);
-                        for(SquareCoordinate target : availableTargetsForAttack){
-                            receiveRatingFromNode(board, awList, this.getId(), enemyId,
-                                    new Answer(heroCoord, HeroActions.ATTACK, target, this.getId()));
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private void runSimulationForEnemyBot(final BattleArena board, final List<AnswerAndWin> awList) throws IOException, HeroExceptions {
-        receiveRatingFromNode(board, awList, enemyId, this.getId(), randomBot.getAnswer(board));
+//
+//                if(action == HeroActions.ATTACK){
+//                    if(!CommonFunction.isUnitHealer(activeHero)){
+//                        final Set<SquareCoordinate> availableTargetsForAttack = getAvailableTargets(board, heroCoord);
+//                        for(SquareCoordinate target : availableTargetsForAttack){
+//                            playerId = enemyId;
+//                            final AnswerAndWin aw = receiveRatingFromNode(board, enemyId, this.getId(),
+//                                    new Answer(heroCoord, HeroActions.ATTACK, target, enemyId));
+//                            awList.add(aw);
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        return getGreedyDecision(awList, winCalculator);
     }
 
     private AnswerAndWin getGreedyDecision(final List<AnswerAndWin> awList, final ToDoubleFunction<WinCollector> winCalculator) {
@@ -151,8 +204,11 @@ public class SmartBotMaxMax extends SmartBotBaseWithGraph {
                 potentialWin.add(tmpDecision);
             }
         }
-        final int idx = new Random().nextInt(potentialWin.size());
-        return potentialWin.get(idx);
+        final List<AnswerAndWin> attackWin = potentialWin.stream().filter(
+                win -> win.answer.getAction().equals(HeroActions.ATTACK))
+                .collect(Collectors.toList());
+
+        return (attackWin.isEmpty()) ? potentialWin.get(0) : attackWin.get(0);
     }
 }
 

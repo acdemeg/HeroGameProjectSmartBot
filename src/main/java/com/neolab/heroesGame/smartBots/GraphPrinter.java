@@ -11,7 +11,7 @@ public class GraphPrinter {
             stringBuilder.append(String.format("Армия игрока <%d>: \\n", key));
             stringBuilder.append(CommonFunction.printArmyForGraph(board.getArmies().get(key), isRoundEnd));
         }
-        return stringBuilder.toString() + "\"";
+        return "\"" + stringBuilder.toString() + "\"";
 
     }
 }

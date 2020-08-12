@@ -127,9 +127,6 @@ public class SelfPlay {
         winRate.merge(winner, 1, Integer::sum);
         battleArena.toLog();
         LOGGER.info("Игрок<{}> выиграл это тяжкое сражение", winner.getName());
-        System.out.println();
-        System.out.println("Игрок " + winner.getName() +   " выиграл это тяжкое сражение");
-        System.out.println();
     }
 
     private void calcWinRate(long start, int numGames, SelfPlay selfPlay){
@@ -159,10 +156,10 @@ public class SelfPlay {
         Player randomBot = new PlayerBot(2, "randomBot");
         SelfPlay selfPlay = new SelfPlay(smartBot_v1, randomBot);
 
-        final int numGames = 1;
+        final int numGames = 100;
         for (int i = 0; i < numGames; i++) {
-            System.out.println("************************* Началась игра *******************************");
-            System.out.println();
+           // System.out.println("************************* Началась игра *******************************");
+           // System.out.println();
             if(i % 2 == 0){
                 selfPlay.prepareForBattle(randomBot, smartBot_v1);
             }

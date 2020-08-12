@@ -27,7 +27,7 @@ public class SmartBotBase extends Player {
     protected int enemyId;
     protected int depth;
     protected int previousDepth;
-    protected final boolean isLogging = false;
+    protected boolean isLogging = false;
     protected Player randomBot;
     protected Map<Integer, Integer> mapDepthRecursionRoundNumber;
     protected static final double EPS = 1.0e-9;
@@ -57,11 +57,11 @@ public class SmartBotBase extends Player {
     }
 
     protected void printResultsFullSimulation(long startTime) throws IOException {
-        System.out.println("Total nodes = " + totalNodes);
+       /* System.out.println("Total nodes = " + totalNodes);
         System.out.println("Terminal nodes = " + terminalNodes);
         System.out.println("Round counter = " + roundCounter);
         System.out.println("Time answer = " + (System.currentTimeMillis() - startTime));
-        System.out.println();
+        System.out.println();*/
 
         if(isLogging){
             LOGGER.info("******************************* Конец симуляции *************************************");
@@ -98,6 +98,13 @@ public class SmartBotBase extends Player {
     protected void toLogBoard(final BattleArena board){
         if(isLogging){
             board.toLog();
+        }
+    }
+
+    protected void toLogAdditionalInfo(){
+        if(isLogging){
+            LOGGER.info("");
+            LOGGER.info("Round {}       Depth {}   TotalNodes {}",  roundCounter, depth, totalNodes);
         }
     }
 
@@ -148,7 +155,7 @@ public class SmartBotBase extends Player {
     }
 
     protected Army getEnemyArmy(final BattleArena battleArena){
-        return battleArena.getArmy(enemyId);
+        return battleArena.getArmy((playerId == enemyId) ? this.getId() : enemyId);
     }
 
 
@@ -156,8 +163,8 @@ public class SmartBotBase extends Player {
         return !battleArena.haveAvailableHeroByArmyId(id);
     }
 
-    protected void receiveRatingFromNode(final BattleArena board, final List<AnswerAndWin> awList,
-                                         int activePlayerId, int waitingPlayerId, Answer answer) throws IOException, HeroExceptions {
+    protected AnswerAndWin receiveRatingFromNode(
+            final BattleArena board, int activePlayerId, int waitingPlayerId, Answer answer) throws IOException, HeroExceptions {
         toLogBoard(board);
         final BattleArena copy = board.getCopy();
         final BoardUpdater boardUpdater = new BoardUpdater(activePlayerId, waitingPlayerId, copy);
@@ -168,7 +175,7 @@ public class SmartBotBase extends Player {
         totalNodes++;
         depth++;
         WinCollector winCollector = getAnswerByGameTree(boardUpdater.getBoard());
-        awList.add(new AnswerAndWin(answer, winCollector));
+        return new AnswerAndWin(answer, winCollector);
     }
 
     protected WinCollector distributeWin(final WinnerType winnerType) {
@@ -190,7 +197,7 @@ public class SmartBotBase extends Player {
     public String getStringArmyFirst(final int armySize) {
         //final List<String> armies = CommonFunction.getAllAvailableArmiesCode(armySize);
         //return armies.get(RANDOM.nextInt(armies.size()));
-        return "    F ";
+        return "   fFf";
     }
 
     public String getStringArmySecond(final int armySize, final Army army) {
