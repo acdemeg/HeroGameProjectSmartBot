@@ -1,6 +1,5 @@
 package com.neolab.heroesGame.smartBots;
 
-import com.neolab.heroesGame.ClientPlayerImitation;
 import com.neolab.heroesGame.arena.StringArmyFactory;
 import com.neolab.heroesGame.client.dto.ExtendedServerResponse;
 import com.neolab.heroesGame.enumerations.GameEvent;
@@ -10,8 +9,6 @@ import com.neolab.heroesGame.errors.HeroExceptions;
 import java.io.*;
 import java.net.Socket;
 import java.util.Scanner;
-
-;
 
 /**
  * Консольный многопользовательский чат.
@@ -28,7 +25,7 @@ public class SmartClient {
     private Socket socket = null;
     private BufferedReader in = null; // поток чтения из сокета
     private BufferedWriter out = null; // поток записи в сокет
-    private ClientPlayerImitation player;
+    private ClientSmartBot player;
 
     /**
      * для создания необходимо принять адрес и номер порта
@@ -170,7 +167,7 @@ public class SmartClient {
         System.out.println("Введите ваше имя");
         Scanner in = new Scanner(System.in);
         String name =  in.nextLine();
-        client.player = ClientPlayerImitation.createCustomPlayer(0, name);
+        client.player = ClientSmartBot.createCustomPlayer(0, name);
         client.startClient();
     }
 }

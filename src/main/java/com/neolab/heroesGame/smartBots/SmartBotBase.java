@@ -57,10 +57,10 @@ public class SmartBotBase extends Player {
     }
 
     protected void printResultsFullSimulation(long startTime) throws IOException {
-       /* System.out.println("Total nodes = " + totalNodes);
+        /*System.out.println("Total nodes = " + totalNodes);
         System.out.println("Terminal nodes = " + terminalNodes);
-        System.out.println("Round counter = " + roundCounter);
-        System.out.println("Time answer = " + (System.currentTimeMillis() - startTime));
+        System.out.println("Round counter = " + roundCounter);*/
+        /*System.out.println("Time answer = " + (System.currentTimeMillis() - startTime));
         System.out.println();*/
 
         if(isLogging){
@@ -195,9 +195,32 @@ public class SmartBotBase extends Player {
     }
 
     public String getStringArmyFirst(final int armySize) {
-        //final List<String> armies = CommonFunction.getAllAvailableArmiesCode(armySize);
-        //return armies.get(RANDOM.nextInt(armies.size()));
-        return " mmFf ";
+        switch (armySize){
+            case 1 -> {
+                return "    F ";
+            }
+
+            case 2 -> {
+                return "   Ff ";
+            }
+            case 3 -> {
+                return "   Fff";
+            }
+            case 4 -> {
+                return "M  fff";
+            }
+
+            case 5 -> {
+                return "Mm fff";
+            }
+            case 6 -> {
+                return "Mmmfff";
+            }
+            default -> {
+                return null;
+            }
+
+        }
     }
 
     public String getStringArmySecond(final int armySize, final Army army) {

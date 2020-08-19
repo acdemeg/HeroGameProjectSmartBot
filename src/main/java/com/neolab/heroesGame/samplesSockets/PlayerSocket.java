@@ -15,7 +15,7 @@ public class PlayerSocket {
     private final BufferedReader in; // поток чтения из сокета
     private final BufferedWriter out; // поток завписи в сокет
     private final int playerId;
-    private final String playerName;
+    private String playerName;
     static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
     private static final Logger LOGGER = LoggerFactory.getLogger(PlayerSocket.class);
 
@@ -36,13 +36,16 @@ public class PlayerSocket {
      *
      * @param socket сокет
      */
-    PlayerSocket(final Socket socket, final int playerId, final String playerName) throws IOException {
+    PlayerSocket(final Socket socket, final int playerId) throws IOException {
         this.playerId = playerId;
-        this.playerName = playerName;
         this.socket = socket;
         // если потоки ввода/вывода приведут к генерированию искдючения, оно проброситься дальше
         in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+    }
+
+    public void setPlayerName(String playerName) {
+        this.playerName = playerName;
     }
 
     /**
@@ -51,8 +54,6 @@ public class PlayerSocket {
      * @return флаг указывающий что клиент установил полученные id и name
      */
     public boolean isAssignIdAndNameClient() throws IOException, InterruptedException {
-        send(String.valueOf(playerId));
-        send(playerName);
         for (int i = 0; i < 3; i++) {
             Thread.sleep(50);
             if (in.ready()) {

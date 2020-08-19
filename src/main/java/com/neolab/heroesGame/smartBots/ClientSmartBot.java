@@ -2,7 +2,6 @@ package com.neolab.heroesGame.smartBots;
 
 import com.neolab.heroesGame.arena.Army;
 import com.neolab.heroesGame.client.ai.Player;
-import com.neolab.heroesGame.client.ai.PlayerBot;
 import com.neolab.heroesGame.client.ai.PlayerHuman;
 import com.neolab.heroesGame.client.dto.ClientRequest;
 import com.neolab.heroesGame.client.dto.ExtendedServerResponse;
@@ -25,7 +24,7 @@ public class ClientSmartBot {
     }
 
     public ClientSmartBot(final int playerId, final String name, final IGraphics gui) {
-        player = new PlayerBot(playerId, name);
+        player = new SmartBotMinMax(playerId, name);
         this.gui = gui;
     }
 
