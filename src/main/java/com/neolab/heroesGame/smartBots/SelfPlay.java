@@ -157,7 +157,7 @@ public class SelfPlay {
         Player randomBot = new PlayerBot(2, "randomBot");
         SelfPlay selfPlay = new SelfPlay(smartBot_v1, randomBot);
 
-        final int numGames = 1;
+        final int numGames = 100;
         for (int i = 0; i < numGames; i++) {
            // System.out.println("************************* Началась игра *******************************");
            // System.out.println();

@@ -13,6 +13,7 @@ import com.neolab.heroesGame.errors.HeroExceptions;
 import com.neolab.heroesGame.server.answers.Answer;
 
 import java.io.IOException;
+import java.util.Scanner;
 
 public class ClientPlayerImitation {
     private final Player player;
@@ -23,8 +24,7 @@ public class ClientPlayerImitation {
         gui = new NullGraphics();
     }
 
-    public ClientPlayerImitation(final int playerId, final String name,
-                                  final IGraphics gui) {
+    public ClientPlayerImitation(final int playerId, final String name, final IGraphics gui) {
         player = new PlayerBot(playerId, name);
         this.gui = gui;
     }
@@ -48,14 +48,39 @@ public class ClientPlayerImitation {
         return new ClientPlayerImitation(human, graphics);
     }
 
+    public static ClientPlayerImitation createCustomPlayer(final int playerId, final String name) throws IOException {
+        System.out.println("1. Создать бота без графической отрисовки");
+        System.out.println("2. Создать бота с графической отрисовки");
+        System.out.println("3. Создать игрока человека");
+        while (true) {
+            final Scanner in = new Scanner(System.in);
+            int choose = 1;
+            try {
+                choose = in.nextInt();
+                if (choose < 1 || choose > 3) {
+                    System.out.println("Неверный формат. Нужно ввести число от 1 до 3");
+                    continue;
+                }
+            } catch (final Exception e) {
+                System.out.println("Неверный формат. Нужно ввести число от 1 до 3");
+            }
+            if (choose == 2) {
+                return createPlayerWithAsciiGraphics(playerId, name);
+            } else if (choose == 3) {
+                return createHumanPlayerWithAsciiGraphics(playerId, name);
+            }
+            return new ClientPlayerImitation(playerId, name);
+        }
+    }
+
     public String getAnswer(final ExtendedServerResponse response) throws IOException, HeroExceptions {
-        gui.showPosition(response, true);
+        gui.showPosition(response);
         final Answer answer = player.getAnswer(response.arena);
         return new ClientRequest(answer).jsonAnswer;
     }
 
     public void sendInformation(final ExtendedServerResponse response) throws IOException {
-        gui.showPosition(response, false);
+        gui.showPosition(response);
     }
 
     public void endGame(final ExtendedServerResponse response) throws IOException {
@@ -80,5 +105,17 @@ public class ClientPlayerImitation {
 
     public String getPlayerName() {
         return player.getName();
+    }
+
+    public void setPlayerId(final int id) {
+        player.setId(id);
+        if (gui instanceof AsciiGraphics) {
+            final AsciiGraphics temp = (AsciiGraphics) gui;
+            temp.setPresenterPlayerId(id);
+        }
+    }
+
+    public void setPlayerName(final String name) {
+        player.setName(name);
     }
 }

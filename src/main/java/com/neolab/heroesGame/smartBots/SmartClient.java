@@ -1,4 +1,4 @@
-package com.neolab.heroesGame.samplesSockets;
+package com.neolab.heroesGame.smartBots;
 
 import com.neolab.heroesGame.ClientPlayerImitation;
 import com.neolab.heroesGame.arena.StringArmyFactory;
@@ -6,21 +6,21 @@ import com.neolab.heroesGame.client.dto.ExtendedServerResponse;
 import com.neolab.heroesGame.enumerations.GameEvent;
 import com.neolab.heroesGame.enumerations.HeroErrorCode;
 import com.neolab.heroesGame.errors.HeroExceptions;
+import com.neolab.heroesGame.samplesSockets.PlayerSocket;
 
 import java.io.*;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
-import java.util.Scanner;
+import java.util.Scanner;;
 
 /**
  * Консольный многопользовательский чат.
  * Клиент
  */
-public class Client {
+public class SmartClient {
 
     private static final String IP = "127.0.0.1";//"localhost";
     private static final int PORT = 8081;
-    private static final SimpleDateFormat DATE_FORMAT = PlayerSocket.DATE_FORMAT;
 
     private final String ip; // ip адрес клиента
     private final int port; // порт соединения
@@ -36,7 +36,7 @@ public class Client {
      * @param ip   ip адрес клиента
      * @param port порт соединения
      */
-    private Client(final String ip, final int port) {
+    private SmartClient(final String ip, final int port) {
         this.ip = ip;
         this.port = port;
     }
@@ -166,7 +166,7 @@ public class Client {
 
 
     public static void main(final String[] args) throws IOException {
-        final Client client = new Client(IP, PORT);
+        final SmartClient client = new SmartClient(IP, PORT);
         System.out.println("Введите ваше имя");
         Scanner in = new Scanner(System.in);
         String name =  in.nextLine();

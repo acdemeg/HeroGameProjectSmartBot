@@ -16,7 +16,7 @@ public class NullGraphics implements IGraphics {
     }
 
     @Override
-    public void showPosition(final ExtendedServerResponse response, final boolean isYourTurn) {
+    public void showPosition(final ExtendedServerResponse response) {
 
     }
 
@@ -57,17 +57,17 @@ public class NullGraphics implements IGraphics {
     }
 
     @Override
-    public Hero getHeroChoose(Army enemyArmy, Map<Integer, Hero> yourArmy) throws IOException {
+    public Hero getHeroChoose(final Army enemyArmy, final Map<Integer, Hero> yourArmy) {
         return null;
     }
 
     @Override
-    public int getHeroPositionChoose(Hero hero, Army enemyArmy, Map<Integer, Hero> yourArmy) throws IOException {
+    public int getHeroPositionChoose(final Hero hero, final Army enemyArmy, final Map<Integer, Hero> yourArmy) {
         return -1;
     }
 
     @Override
-    public boolean finishCreatingArmy(Army enemyArmy, Map<Integer, Hero> yourArmy) throws IOException {
+    public boolean finishCreatingArmy(final Army enemyArmy, final Map<Integer, Hero> yourArmy) {
         return false;
     }
 

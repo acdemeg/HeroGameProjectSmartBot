@@ -10,8 +10,9 @@ import java.util.Objects;
 
 public abstract class Player {
 
-    private final int id;
-    private final String name;
+    private int id;
+
+    private String name;
 
     public Player(final int id, final String name) {
         this.id = id;
@@ -30,6 +31,14 @@ public abstract class Player {
 
     public String getName() {
         return name;
+    }
+
+    public void setId(final int id) {
+        this.id = id;
+    }
+
+    public void setName(final String name) {
+        this.name = name;
     }
 
     @Override

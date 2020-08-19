@@ -22,8 +22,9 @@ public class ActionPresenter {
     private final Terminal term;
     private final TextGraphics textGraphics;
     private int leftOffset;
-    private final int playerId;
+    private int playerId;
     private final int infoString = 22;
+    private final int offsetForEffect = 23;
     private int lastRow = 0;
 
     public ActionPresenter(final int playerId, final Terminal term, final TextGraphics textGraphics) throws IOException {
@@ -33,13 +34,17 @@ public class ActionPresenter {
         this.playerId = playerId;
     }
 
-    public int showPosition(final ExtendedServerResponse response, final boolean isYourTurn) throws IOException {
+    public void setPlayerId(final int playerId) {
+        this.playerId = playerId;
+    }
+
+    public int showPosition(final ExtendedServerResponse response) throws IOException {
         final ActionEffect effect = Optional.ofNullable(response.effect).orElse(ActionEffect.defaultActionEffect());
         term.clearScreen();
         printBattleArena(response.arena, effect);
-        printTurn(isYourTurn);
+        printTurn(response.event == GameEvent.NOW_YOUR_TURN);
         if (!effect.getSourceUnit().equals(IS_AOE_EFFECT)) {
-            printEffect(effect, isYourTurn);
+            printEffect(effect, response.event == GameEvent.NOW_YOUR_TURN);
         }
         term.flush();
         term.readInput();
@@ -52,7 +57,6 @@ public class ActionPresenter {
         printGameResult(response.event);
         term.flush();
         term.readInput();
-        term.close();
         return lastRow;
     }
 
@@ -85,24 +89,31 @@ public class ActionPresenter {
      * Для определения умер ли юнит только что проверяем чей последний ход и обращаемся к функции isUnitDiedRightNow
      * для того, чтобы определить наносился ли этому юниту в прошлом ходу урон
      */
-    private void printArmy(final Army yours, final ActionEffect effect, final boolean isItYourArmy) {
+    private void printArmy(final Army army, final ActionEffect effect, final boolean isItYourArmy) {
         int topString = isItYourArmy ? 12 : 2;
+        final int step = 13;
         final boolean isLastMoveMakeThisArmy = (effect.getLastMovedPlayerId() == playerId) == isItYourArmy;
+        textGraphics.setForegroundColor(TextColor.ANSI.BLACK);
         for (int i = 0; i < 2; i++) {
             final int y = isItYourArmy ? 1 - i : i;
             for (int x = 0; x < 3; x++) {
                 final SquareCoordinate coordinate = new SquareCoordinate(x, y);
-                final Optional<Hero> hero = yours.getHero(coordinate);
-                final TextColor textColor = chooseColorForHero(coordinate, effect, isLastMoveMakeThisArmy);
-                final int step = 13;
+                final Optional<Hero> hero = army.getHero(coordinate);
                 if (!isLastMoveMakeThisArmy && hero.isEmpty() && isUnitDiedRightNow(effect, coordinate)) {
                     printDeadUnit(topString, leftOffset + 1 + x * step);
                 } else {
-                    printHero(hero, yours, topString, leftOffset + 1 + x * step, textColor);
+                    if (hero.isPresent()) {
+                        setBackGroundColorForHero(coordinate, effect, isLastMoveMakeThisArmy);
+                        printHero(hero.get(), army, topString, leftOffset + 1 + x * step);
+                    } else {
+                        printEmptyUnit(topString, leftOffset + 1 + x * step);
+                    }
                 }
             }
             topString += 4;
         }
+        textGraphics.setBackgroundColor(TextColor.ANSI.BLACK);
+        textGraphics.setForegroundColor(TextColor.ANSI.WHITE);
     }
 
     private void printTurn(final boolean isYourTurn) {
@@ -115,24 +126,24 @@ public class ActionPresenter {
     }
 
     private void printEffect(final ActionEffect effect, final boolean isNowYourTurn) throws IOException {
-        final int offsetForEffect = 23;
         final StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("Во время прошлого хода ");
         stringBuilder.append(isNowYourTurn ? "вражеский " : "ваш ");
         stringBuilder.append(effect.toString());
 
         if (effect.getAction() == HeroActions.ATTACK) {
-            printAttackEffect(stringBuilder, offsetForEffect);
+            printAttackEffect(stringBuilder);
         } else if (effect.getAction() == HeroActions.DEFENCE) {
             final int offset = (term.getTerminalSize().getColumns() - stringBuilder.length()) / 2;
             textGraphics.putString(offset, offsetForEffect, stringBuilder.toString());
             lastRow = offsetForEffect + 2;
         } else {
-            printHealEffect(stringBuilder, offsetForEffect);
+            printHealEffect(stringBuilder);
         }
     }
 
-    private void printHealEffect(final StringBuilder stringBuilder, int currentStringNumber) {
+    private void printHealEffect(final StringBuilder stringBuilder) {
+        int currentStringNumber = offsetForEffect;
         final int offset = 10;
         final String[] strings = stringBuilder.toString().split("восстановил");
         textGraphics.putString(0, currentStringNumber++, strings[0] + ":");
@@ -142,7 +153,8 @@ public class ActionPresenter {
         lastRow = currentStringNumber + 1;
     }
 
-    private void printAttackEffect(final StringBuilder stringBuilder, int currentStringNumber) {
+    private void printAttackEffect(final StringBuilder stringBuilder) {
+        int currentStringNumber = offsetForEffect;
         final int offset = 10;
         final String[] strings = stringBuilder.toString().split("нанес|промахнулся");
         textGraphics.putString(0, currentStringNumber++, strings[0] + ":");
@@ -161,43 +173,36 @@ public class ActionPresenter {
 
     /**
      * Если последний ход был этой армии, то юнит может быть циан (если он действовал) или зеленным (если его лечили)
-     * если лекарь лечил сам себя, то он циан; если юнит встал в защиту, то он циан
+     * если лекарь лечил сам себя, то он зеленый; если юнит встал в защиту, то он циан
      * Если последний ход делала вражеская армия, то юнит может быть красным (если ему нанесли урон)
-     * или желтым (если по нему не попали
+     * или желтым (если по нему не попали)
      * Если в прошлом ходу юнит никак не участвовал, то он остается белым
      */
-    private TextColor chooseColorForHero(final SquareCoordinate coordinate, final ActionEffect effect,
-                                         final boolean isLastTurnMakeYou) {
+    private void setBackGroundColorForHero(final SquareCoordinate coordinate, final ActionEffect effect,
+                                           final boolean isLastTurnMakeYou) {
+        textGraphics.setBackgroundColor(TextColor.ANSI.WHITE);
         if (isLastTurnMakeYou) {
             if (effect.getSourceUnit().equals(coordinate)) {
-                return TextColor.ANSI.CYAN;
+                textGraphics.setBackgroundColor(TextColor.ANSI.CYAN);
             }
             if (effect.getAction() == HeroActions.HEAL && effect.getTargetUnitsMap().containsKey(coordinate)) {
-                return TextColor.ANSI.GREEN;
+                textGraphics.setBackgroundColor(TextColor.ANSI.GREEN);
             }
         } else if (effect.getTargetUnitsMap().containsKey(coordinate) && effect.getAction() == HeroActions.ATTACK) {
             if (effect.getTargetUnitsMap().get(coordinate) != 0) {
-                return TextColor.ANSI.RED;
+                textGraphics.setBackgroundColor(TextColor.ANSI.RED);
+            } else {
+                textGraphics.setBackgroundColor(TextColor.ANSI.YELLOW);
             }
-            return TextColor.ANSI.YELLOW;
         }
-        return TextColor.ANSI.WHITE;
     }
 
-    private void printHero(final Optional<Hero> hero, final Army army, int heightOffset,
-                           final int widthOffset, final TextColor textColor) {
+    private void printHero(final Hero hero, final Army army, int heightOffset,
+                           final int widthOffset) {
         final int width = 12;
-        textGraphics.setBackgroundColor(textColor);
-        textGraphics.setForegroundColor(TextColor.ANSI.BLACK);
-        if (hero.isPresent()) {
-            textGraphics.putString(widthOffset, heightOffset++, putToTheCenter(hero.get().getClassName(), width));
-            textGraphics.putString(widthOffset, heightOffset++, getUnitHPString(hero.get()));
-            textGraphics.putString(widthOffset, heightOffset, getUnitStatus(hero.get(), army));
-        } else {
-            printEmptyUnit(widthOffset, heightOffset);
-        }
-        textGraphics.setBackgroundColor(TextColor.ANSI.BLACK);
-        textGraphics.setForegroundColor(TextColor.ANSI.WHITE);
+        textGraphics.putString(widthOffset, heightOffset++, putToTheCenter(hero.getClassName(), width));
+        textGraphics.putString(widthOffset, heightOffset++, getUnitHPString(hero));
+        textGraphics.putString(widthOffset, heightOffset, getUnitStatus(hero, army));
     }
 
     private String getUnitHPString(final Hero hero) {
@@ -220,6 +225,7 @@ public class ActionPresenter {
     }
 
     private void printEmptyUnit(int topString, final int widthOffset) {
+        textGraphics.setBackgroundColor(TextColor.ANSI.WHITE);
         textGraphics.putString(widthOffset, topString++, "            ");
         textGraphics.putString(widthOffset, topString++, "            ");
         textGraphics.putString(widthOffset, topString, "            ");
@@ -227,11 +233,8 @@ public class ActionPresenter {
 
     private void printDeadUnit(int topString, final int widthOffset) {
         textGraphics.setBackgroundColor(TextColor.ANSI.RED);
-        textGraphics.setForegroundColor(TextColor.ANSI.BLACK);
         textGraphics.putString(widthOffset, topString++, "            ");
         textGraphics.putString(widthOffset, topString++, "    DEAD    ", SGR.BLINK);
         textGraphics.putString(widthOffset, topString, "            ");
-        textGraphics.setBackgroundColor(TextColor.ANSI.BLACK);
-        textGraphics.setForegroundColor(TextColor.ANSI.WHITE);
     }
 }

@@ -14,10 +14,9 @@ public interface IGraphics {
     /**
      * Отображаем текущую позицию на арене и последнее сделанное действие.
      *
-     * @param response   - Используется для отображения арены, эффекта прошлого действия.
-     * @param isYourTurn - В зависимости от значения этой переменной будет отображено чей сейчас ход
+     * @param response - Используется для отображения арены, эффекта прошлого действия.
      */
-    void showPosition(final ExtendedServerResponse response, boolean isYourTurn) throws IOException;
+    void showPosition(final ExtendedServerResponse response) throws IOException;
 
     void endGame(final ExtendedServerResponse response) throws IOException;
 

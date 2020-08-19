@@ -25,7 +25,7 @@ public class SmartBotBase extends Player {
     protected int playerId;
     protected int enemyId;
     protected int depth;
-    protected final int maxRecLevel = 4;
+    protected final int maxRecLevel = Integer.MAX_VALUE;
     protected int previousDepth;
     protected boolean isLogging = false;
     protected Player randomBot;
@@ -197,7 +197,7 @@ public class SmartBotBase extends Player {
     public String getStringArmyFirst(final int armySize) {
         //final List<String> armies = CommonFunction.getAllAvailableArmiesCode(armySize);
         //return armies.get(RANDOM.nextInt(armies.size()));
-        return "aMhfff";
+        return " mmFf ";
     }
 
     public String getStringArmySecond(final int armySize, final Army army) {
