@@ -1,6 +1,7 @@
 package com.neolab.heroesGame.smartBots;
 
 import com.neolab.heroesGame.aditional.CommonFunction;
+import com.neolab.heroesGame.arena.Army;
 import com.neolab.heroesGame.arena.BattleArena;
 import com.neolab.heroesGame.arena.SquareCoordinate;
 import com.neolab.heroesGame.enumerations.HeroActions;
@@ -9,15 +10,17 @@ import com.neolab.heroesGame.heroes.Hero;
 import com.neolab.heroesGame.server.answers.Answer;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
 
 import static com.neolab.heroesGame.smartBots.SelfPlay.MAX_ROUND;
 
-public class SmartBotMaxMax extends SmartBotBase {
+public class SmartBotMinMax extends SmartBotBase{
 
-    public SmartBotMaxMax(final int id, final String name) {
+    public SmartBotMinMax(final int id, final String name) {
         super(id, name);
     }
 
@@ -51,12 +54,12 @@ public class SmartBotMaxMax extends SmartBotBase {
 
         if(playerId == this.getId()){
             winCalculator = WinCollector::getTotalWin;
-            final AnswerAndWin aw = runSimulationForSmartBot(board, WinCollector::getTotalWin);
+            final AnswerAndWin aw = runSimulationForSmartBot(board, winCalculator);
             awList.add(aw);
         }
         else {
-            winCalculator = w -> 1.0D - w.getTotalWin();
-            final AnswerAndWin aw = runSimulationForEnemyBot(board,  w -> 1.0D - w.getTotalWin());
+            winCalculator = w -> -w.getTotalWin();
+            final AnswerAndWin aw = runSimulationForEnemyBot(board,  winCalculator);
             awList.add(aw);
         }
 
@@ -75,6 +78,10 @@ public class SmartBotMaxMax extends SmartBotBase {
             changeSmartAndRandomPlayers();
             depth--;
             return distributeWin(winnerType);
+        }
+        if (depth >= maxRecLevel) {
+            final WinCollector termNodeWinCollector = distributeMaxRecNode(board);
+            return termNodeWinCollector.catchBrokenProbabilities();
         }
         if (!board.canSomeoneAct()) {
             if(mapDepthRecursionRoundNumber.size() == depth){
@@ -168,6 +175,19 @@ public class SmartBotMaxMax extends SmartBotBase {
 
         return (attackWin.isEmpty()) ? potentialWin.get(0) : attackWin.get(0);
     }
+
+    private WinCollector distributeMaxRecNode(BattleArena board) {
+        double differenceRating = (getRatingArmy(board,this.getId()) - getRatingArmy(board, enemyId))/10_000;
+        double normalizeValue = 1/(1 + Math.exp(-differenceRating));
+        return new WinCollector(normalizeValue, 0,1.0D - normalizeValue,normalizeValue,0);
+    }
+
+    private double getRatingArmy(BattleArena board, int id){
+        Army army = board.getArmy(id);
+        double rating = 0;
+        for(Hero hero : army.getHeroes().values()){
+            rating += hero.getHp() * hero.getDamage() * hero.getPrecision();
+        }
+        return  rating;
+    }
 }
-
-

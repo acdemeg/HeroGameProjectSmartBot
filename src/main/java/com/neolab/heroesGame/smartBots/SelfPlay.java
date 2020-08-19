@@ -152,11 +152,12 @@ public class SelfPlay {
 
         final long start = System.nanoTime();
 
-        Player smartBot_v1 = new SmartBotMaxMax(1, "smartBot");
+        Player smartBot_v1 = new SmartBotMinMax(1, "smartBotMinMax");
+        //Player smartBot_v2 = new SmartBotMaxMax(2, "smartBotMaxMax");
         Player randomBot = new PlayerBot(2, "randomBot");
         SelfPlay selfPlay = new SelfPlay(smartBot_v1, randomBot);
 
-        final int numGames = 100;
+        final int numGames = 1;
         for (int i = 0; i < numGames; i++) {
            // System.out.println("************************* Началась игра *******************************");
            // System.out.println();

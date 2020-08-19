@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -26,6 +25,7 @@ public class SmartBotBase extends Player {
     protected int playerId;
     protected int enemyId;
     protected int depth;
+    protected final int maxRecLevel = 4;
     protected int previousDepth;
     protected boolean isLogging = false;
     protected Player randomBot;
@@ -197,7 +197,7 @@ public class SmartBotBase extends Player {
     public String getStringArmyFirst(final int armySize) {
         //final List<String> armies = CommonFunction.getAllAvailableArmiesCode(armySize);
         //return armies.get(RANDOM.nextInt(armies.size()));
-        return "   fFf";
+        return "aMhfff";
     }
 
     public String getStringArmySecond(final int armySize, final Army army) {
