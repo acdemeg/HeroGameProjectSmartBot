@@ -6,7 +6,6 @@ import com.neolab.heroesGame.client.dto.ExtendedServerResponse;
 import com.neolab.heroesGame.enumerations.HeroActions;
 import com.neolab.heroesGame.heroes.Hero;
 
-import java.io.IOException;
 import java.util.Map;
 
 public class NullGraphics implements IGraphics {

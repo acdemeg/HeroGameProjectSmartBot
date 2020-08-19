@@ -6,12 +6,12 @@ import com.neolab.heroesGame.client.dto.ExtendedServerResponse;
 import com.neolab.heroesGame.enumerations.GameEvent;
 import com.neolab.heroesGame.enumerations.HeroErrorCode;
 import com.neolab.heroesGame.errors.HeroExceptions;
-import com.neolab.heroesGame.samplesSockets.PlayerSocket;
 
 import java.io.*;
 import java.net.Socket;
-import java.text.SimpleDateFormat;
-import java.util.Scanner;;
+import java.util.Scanner;
+
+;
 
 /**
  * Консольный многопользовательский чат.

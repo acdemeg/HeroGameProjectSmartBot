@@ -9,7 +9,9 @@ import com.neolab.heroesGame.heroes.Hero;
 import com.neolab.heroesGame.server.answers.Answer;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
 
