@@ -13,9 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class SmartBotBase extends Player {
     private static final Logger LOGGER = LoggerFactory.getLogger(SmartBotBase.class);
@@ -221,6 +219,8 @@ public class SmartBotBase extends Player {
             }
 
         }
+//        final List<String> armies = CommonFunction.getAllAvailableArmiesCode(armySize);
+//        return armies.get(new Random(5916).nextInt(armies.size()));
     }
 
     public String getStringArmySecond(final int armySize, final Army army) {
