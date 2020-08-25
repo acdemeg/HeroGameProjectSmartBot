@@ -20,7 +20,7 @@ public class SmartBotExpert extends SmartBotBase {
     }
 
     @Override
-    public Answer getAnswer(final BattleArena board) throws IOException, HeroExceptions {
+    public Answer getAnswer(final BattleArena board) throws HeroExceptions {
         initializeFullSimulation(board);
 
         final Set<SquareCoordinate> availableHeroes = getAvailableHeroes(board);

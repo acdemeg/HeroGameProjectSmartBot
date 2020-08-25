@@ -5,6 +5,7 @@ import com.neolab.heroesGame.client.dto.ExtendedServerResponse;
 import com.neolab.heroesGame.enumerations.GameEvent;
 import com.neolab.heroesGame.enumerations.HeroErrorCode;
 import com.neolab.heroesGame.errors.HeroExceptions;
+import com.neolab.heroesGame.samplesSockets.PropsServerManager;
 
 import java.io.*;
 import java.net.Socket;
@@ -16,8 +17,9 @@ import java.util.Scanner;
  */
 public class SmartClient {
 
-    private static final String IP = "127.0.0.1";//"localhost";
-    private static final int PORT = 8081;
+    public static final PropsServerManager props = new PropsServerManager();
+    private static final String IP = props.IP;
+    private static final int PORT = props.PORT;
 
     private final String ip; // ip адрес клиента
     private final int port; // порт соединения

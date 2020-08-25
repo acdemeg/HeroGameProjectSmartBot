@@ -18,8 +18,9 @@ import java.util.Scanner;
  */
 public class Client {
 
-    private static final String IP = "127.0.0.1";//"localhost";
-    private static final int PORT = 8081;
+    public static final PropsServerManager props = new PropsServerManager();
+    private static final String IP = props.IP;
+    private static final int PORT = props.PORT;
     private static final SimpleDateFormat DATE_FORMAT = PlayerSocket.DATE_FORMAT;
 
     private final String ip; // ip адрес клиента
