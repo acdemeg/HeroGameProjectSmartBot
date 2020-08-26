@@ -22,3 +22,5 @@
 /target/
 
 
+/graph.dot
+/dependency-reduced-pom.xml

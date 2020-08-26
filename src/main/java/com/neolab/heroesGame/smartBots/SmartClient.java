@@ -1,27 +1,25 @@
-package com.neolab.heroesGame.samplesSockets;
+package com.neolab.heroesGame.smartBots;
 
-import com.neolab.heroesGame.ClientPlayerImitation;
 import com.neolab.heroesGame.arena.StringArmyFactory;
 import com.neolab.heroesGame.client.dto.ExtendedServerResponse;
 import com.neolab.heroesGame.enumerations.GameEvent;
 import com.neolab.heroesGame.enumerations.HeroErrorCode;
 import com.neolab.heroesGame.errors.HeroExceptions;
+import com.neolab.heroesGame.samplesSockets.PropsServerManager;
 
 import java.io.*;
 import java.net.Socket;
-import java.text.SimpleDateFormat;
 import java.util.Scanner;
 
 /**
  * Консольный многопользовательский чат.
  * Клиент
  */
-public class Client {
+public class SmartClient {
 
     public static final PropsServerManager props = new PropsServerManager();
     private static final String IP = props.IP;
     private static final int PORT = props.PORT;
-    private static final SimpleDateFormat DATE_FORMAT = PlayerSocket.DATE_FORMAT;
 
     private final String ip; // ip адрес клиента
     private final int port; // порт соединения
@@ -29,7 +27,7 @@ public class Client {
     private Socket socket = null;
     private BufferedReader in = null; // поток чтения из сокета
     private BufferedWriter out = null; // поток записи в сокет
-    private ClientPlayerImitation player;
+    private ClientSmartBot player;
 
     /**
      * для создания необходимо принять адрес и номер порта
@@ -37,7 +35,7 @@ public class Client {
      * @param ip   ip адрес клиента
      * @param port порт соединения
      */
-    private Client(final String ip, final int port) {
+    private SmartClient(final String ip, final int port) {
         this.ip = ip;
         this.port = port;
     }
@@ -167,11 +165,11 @@ public class Client {
 
 
     public static void main(final String[] args) throws IOException {
-        final Client client = new Client(IP, PORT);
+        final SmartClient client = new SmartClient(IP, PORT);
         System.out.println("Введите ваше имя");
         Scanner in = new Scanner(System.in);
         String name =  in.nextLine();
-        client.player = ClientPlayerImitation.createCustomPlayer(0, name);
+        client.player = ClientSmartBot.createCustomPlayer(0, name);
         client.startClient();
     }
 }

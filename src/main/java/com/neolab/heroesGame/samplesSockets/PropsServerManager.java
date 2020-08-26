@@ -14,6 +14,7 @@ public class PropsServerManager {
     private static final String PATH_TO_PROPERTIES = "src/main/resources/server.properties";
     private static final Logger LOGGER = LoggerFactory.getLogger(PropsServerManager.class);
     public int PORT = 8081;
+    public String IP = "127.0.0.1";
     public int MAX_COUNT_PLAYERS;
     public int MAX_COUNT_GAME_ROOMS;
     public int MAX_COUNT_BATTLES;
@@ -31,6 +32,7 @@ public class PropsServerManager {
             //prop.load(PropsServerManager.class.getResourceAsStream("resources/server.properties"));
             prop.load(new FileInputStream(PATH_TO_PROPERTIES));
             PORT = Integer.parseInt(prop.getProperty("server.PORT"));
+            IP = prop.getProperty("server.IP");
             MAX_COUNT_PLAYERS = Integer.parseInt(prop.getProperty("MAX_COUNT_PLAYERS"));
             MAX_COUNT_GAME_ROOMS = Integer.parseInt(prop.getProperty("MAX_COUNT_GAME_ROOMS"));
             MAX_COUNT_BATTLES = Integer.parseInt(prop.getProperty("MAX_COUNT_BATTLES"));

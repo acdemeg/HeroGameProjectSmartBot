@@ -21,6 +21,14 @@ public class BattleArena {
         this.armies = armies;
     }
 
+    public static BattleArena createBattleArena(final int firstId, final Army firstArmy,
+                                                final int secondId, final Army secondArmy) {
+        final Map<Integer, Army> armies = new HashMap<>();
+        armies.put(firstId, firstArmy);
+        armies.put(secondId, secondArmy);
+        return new BattleArena(armies);
+    }
+
     public Map<Integer, Army> getArmies() {
         return armies;
     }

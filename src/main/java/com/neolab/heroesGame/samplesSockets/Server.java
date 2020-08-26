@@ -37,7 +37,7 @@ public class Server {
                         createResponseSocket(socket);
                         createGameRoom();
                     } else {
-                        final PlayerSocket playerSocket = new PlayerSocket(socket, 0, "null");
+                        final PlayerSocket playerSocket = new PlayerSocket(socket, 0);
                         playerSocket.send(GameEvent.MAX_COUNT_PLAYERS.toString());
                         playerSocket.downService();
                     }
@@ -57,6 +57,7 @@ public class Server {
         return countGameRooms;
     }
 
+
     public static ConcurrentLinkedQueue<PlayerSocket> getServerList() {
         return serverList;
     }
@@ -72,9 +73,10 @@ public class Server {
      */
     private static void createResponseSocket(final Socket socket) throws IOException, InterruptedException {
         final int playerId = idGenerator.getAsInt();
-        final String name = props.mapIdNamePlayers.get(playerId);
-        final String playerName = (name == null) ? generatePlayerName(playerId) : name;
-        final PlayerSocket playerSocket = new PlayerSocket(socket, playerId, playerName);
+        final PlayerSocket playerSocket = new PlayerSocket(socket, playerId);
+        final String name = playerSocket.getIn().readLine();
+        playerSocket.setPlayerName(name);
+        playerSocket.send(String.valueOf(playerId));
 
         if (playerSocket.isAssignIdAndNameClient()) {
             serverList.add(playerSocket);
@@ -122,4 +124,5 @@ public class Server {
         Server.startServer();
     }
 }
+
 

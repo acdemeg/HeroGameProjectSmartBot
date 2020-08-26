@@ -1,8 +1,7 @@
-package com.neolab.heroesGame;
+package com.neolab.heroesGame.smartBots;
 
 import com.neolab.heroesGame.arena.Army;
 import com.neolab.heroesGame.client.ai.Player;
-import com.neolab.heroesGame.client.ai.PlayerBot;
 import com.neolab.heroesGame.client.ai.PlayerHuman;
 import com.neolab.heroesGame.client.dto.ClientRequest;
 import com.neolab.heroesGame.client.dto.ExtendedServerResponse;
@@ -15,40 +14,40 @@ import com.neolab.heroesGame.server.answers.Answer;
 import java.io.IOException;
 import java.util.Scanner;
 
-public class ClientPlayerImitation {
+public class ClientSmartBot {
     private final Player player;
     private final IGraphics gui;
 
-    public ClientPlayerImitation(final int playerId, final String name) {
-        player = new PlayerBot(playerId, name);
+    public ClientSmartBot(final int playerId, final String name) {
+        player = new SmartBotExpert(playerId, name);
         gui = new NullGraphics();
     }
 
-    public ClientPlayerImitation(final int playerId, final String name, final IGraphics gui) {
-        player = new PlayerBot(playerId, name);
+    public ClientSmartBot(final int playerId, final String name, final IGraphics gui) {
+        player = new SmartBotExpert(playerId, name);
         this.gui = gui;
     }
 
-    private ClientPlayerImitation(final Player player,
+    private ClientSmartBot(final Player player,
                                   final IGraphics gui) {
         this.player = player;
         this.gui = gui;
     }
 
-    public static ClientPlayerImitation createPlayerWithAsciiGraphics(final int playerId,
-                                                                      final String name) throws IOException {
+    public static ClientSmartBot createPlayerWithAsciiGraphics(final int playerId,
+                                                                                            final String name) throws IOException {
         final IGraphics graphics = new AsciiGraphics(playerId);
-        return new ClientPlayerImitation(playerId, name, graphics);
+        return new ClientSmartBot(playerId, name, graphics);
     }
 
-    public static ClientPlayerImitation createHumanPlayerWithAsciiGraphics(final int playerId,
-                                                                           final String name) throws IOException {
+    public static ClientSmartBot createHumanPlayerWithAsciiGraphics(final int playerId,
+                                                                                                 final String name) throws IOException {
         final IGraphics graphics = new AsciiGraphics(playerId);
         final Player human = new PlayerHuman(playerId, name, graphics);
-        return new ClientPlayerImitation(human, graphics);
+        return new ClientSmartBot(human, graphics);
     }
 
-    public static ClientPlayerImitation createCustomPlayer(final int playerId, final String name) throws IOException {
+    public static ClientSmartBot createCustomPlayer(final int playerId, final String name) throws IOException {
         System.out.println("1. Создать бота без графической отрисовки");
         System.out.println("2. Создать бота с графической отрисовки");
         System.out.println("3. Создать игрока человека");
@@ -69,7 +68,7 @@ public class ClientPlayerImitation {
             } else if (choose == 3) {
                 return createHumanPlayerWithAsciiGraphics(playerId, name);
             }
-            return new ClientPlayerImitation(playerId, name);
+            return new ClientSmartBot(playerId, name);
         }
     }
 
@@ -115,7 +114,4 @@ public class ClientPlayerImitation {
         }
     }
 
-    public void setPlayerName(final String name) {
-        player.setName(name);
-    }
 }

@@ -12,12 +12,11 @@ import com.neolab.heroesGame.server.answers.Answer;
 import com.neolab.heroesGame.server.answers.AnswerProcessor;
 import com.neolab.heroesGame.server.dto.ClientResponse;
 import com.neolab.heroesGame.server.dto.ExtendedServerRequest;
+import com.neolab.heroesGame.validators.StringArmyValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 public class GameServer {
@@ -38,7 +37,6 @@ public class GameServer {
     public GameEvent gameProcess() throws IOException, InterruptedException {
         LOGGER.info("-----------------Начинается великая битва---------------");
         final PlayerSocket thisPlayerStartFirst = currentPlayer;
-        final PlayerSocket secondPlayer = waitingPlayer;
         while (true) {
             final Optional<PlayerSocket> whoIsWin = someoneWhoWin();
             if (whoIsWin.isPresent()) {
@@ -68,23 +66,56 @@ public class GameServer {
         }
     }
 
-    public void prepareForBattle() throws IOException, HeroExceptions {
-        currentPlayer.send(HeroConfigManager.getHeroConfig().getProperty("hero.army.size"));
-        currentPlayer.send("");
-        final String player1ArmyResponse = currentPlayer.getIn().readLine();
-        final Army player1Army = new StringArmyFactory(player1ArmyResponse).create();
+    public PlayerSocket prepareForBattle() throws IOException, HeroExceptions {
+        final int armySize = Integer.parseInt(HeroConfigManager.getHeroConfig().getProperty("hero.army.size"));
+        int counterTryingFirstPlayer = 0;
+        int counterTryingSecondPlayer = 0;
+        while (counterTryingFirstPlayer < 3 && counterTryingSecondPlayer < 3) {
+            final String player1ArmyResponse = getCorrectArmy(currentPlayer, "", armySize);
+            if (player1ArmyResponse.equals("")) {
+                incorrectArmy(currentPlayer);
+                counterTryingFirstPlayer++;
+                continue;
+            }
 
-        waitingPlayer.send(HeroConfigManager.getHeroConfig().getProperty("hero.army.size"));
-        waitingPlayer.send(player1ArmyResponse);
-        final String player2ArmyResponse = waitingPlayer.getIn().readLine();
-        final Army player2Army = new StringArmyFactory(player2ArmyResponse).create();
+            final String player2ArmyResponse = getCorrectArmy(waitingPlayer, player1ArmyResponse, armySize);
+            if (player2ArmyResponse.equals("")) {
+                incorrectArmy(waitingPlayer);
+                counterTryingSecondPlayer++;
+                continue;
+            }
 
-        final Map<Integer, Army> battleMap = new HashMap<>();
-        battleMap.put(currentPlayer.getPlayerId(), player1Army);
-        battleMap.put(waitingPlayer.getPlayerId(), player2Army);
-        this.battleArena = new BattleArena(battleMap);
-        this.answerProcessor = new AnswerProcessor(currentPlayer.getPlayerId(),
-                waitingPlayer.getPlayerId(), battleArena);
+            final Army player2Army = new StringArmyFactory(player2ArmyResponse).create();
+            final Army player1Army = new StringArmyFactory(player1ArmyResponse).create();
+            this.battleArena = BattleArena.createBattleArena(currentPlayer.getPlayerId(), player1Army,
+                    waitingPlayer.getPlayerId(), player2Army);
+            this.answerProcessor = new AnswerProcessor(currentPlayer.getPlayerId(),
+                    waitingPlayer.getPlayerId(), battleArena);
+
+            currentPlayer.send(GameEvent.ARMY_IS_CREATED.toString());
+            waitingPlayer.send(GameEvent.ARMY_IS_CREATED.toString());
+            return null;
+        }
+        return counterTryingFirstPlayer == 3 ? currentPlayer : waitingPlayer;
+    }
+
+    private String getCorrectArmy(final PlayerSocket player, final String enemyArmy,
+                                  final Integer armySize) throws IOException {
+        player.send(armySize.toString());
+        player.send(enemyArmy);
+        final String armyResponse = player.getIn().readLine();
+
+        if (StringArmyValidator.validateArmyString(armyResponse, armySize)) {
+            return armyResponse;
+        } else {
+            return "";
+        }
+    }
+
+    private void incorrectArmy(final PlayerSocket failPlayer) throws IOException {
+        LOGGER.info("Игрок {} отправил невалидную армию, игра не может быть продолжена", failPlayer.getPlayerName());
+        currentPlayer.send(GameEvent.ERROR_ARMY_CREATED.toString());
+        waitingPlayer.send(GameEvent.ERROR_ARMY_CREATED.toString());
     }
 
     private void changeCurrentAndWaitingPlayers() {
@@ -170,14 +201,13 @@ public class GameServer {
      * @return флаг готовность входного потока от клиета
      */
     private boolean checkInputStreamReady() throws IOException, InterruptedException {
-        for (int i = 0; i < 3; i++) {
+        final int maxCounter = Server.props.MAX_ANSWER_TIMEOUT / 50 * 3;
+        for (int i = 0; i < maxCounter; i++) {
             Thread.sleep(50);
             if (currentPlayer.getIn().ready()) {
                 return true;
             }
-            Thread.sleep(Server.props.MAX_ANSWER_TIMEOUT);
         }
         return false;
     }
 }
-

@@ -94,6 +94,83 @@ public class CommonFunction {
         return stringBuilder.toString();
     }
 
+    public static String printArmyForGraph(final Army army, final boolean isRoundEnd) {
+        final StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("________________________________________\\n");
+        for (int y = 0; y < 2; y++) {
+            stringBuilder.append(getLineUnitForGraph(army, y, isRoundEnd));
+            stringBuilder.append("|____________|____________|____________|\\n");
+        }
+        stringBuilder.append("\\n");
+        return stringBuilder.toString();
+    }
+
+    private static String getLineUnitForGraph(final Army army, final int y, final boolean isRoundEnd) {
+        final StringBuilder stringBuilder = new StringBuilder();
+        final Map<Integer, Optional<Hero>> heroes = new HashMap<>();
+        for (int x = 0; x < 3; x++) {
+            heroes.put(x, army.getHero(new SquareCoordinate(x, y)));
+        }
+        stringBuilder.append("|");
+        for (int x = 0; x < 3; x++) {
+            stringBuilder.append(classToStringForGraph(heroes.get(x)));
+        }
+        stringBuilder.append("\\n|");
+        for (int x = 0; x < 3; x++) {
+            stringBuilder.append(hpToStringForGraph(heroes.get(x)));
+        }
+        stringBuilder.append("\\n|");
+        for (int x = 0; x < 3; x++) {
+            stringBuilder.append(statusToStringForGraph(heroes.get(x), army, isRoundEnd));
+        }
+        stringBuilder.append("\\n");
+        return stringBuilder.toString();
+    }
+
+    public static String statusToStringForGraph(final Optional<Hero> optionalHero, final Army army, final boolean isRoundEnd) {
+        final StringBuilder result = new StringBuilder();
+        if (optionalHero.isEmpty()) {
+            result.append(String.format("%24s|", ""));
+        } else {
+            final Hero hero = optionalHero.get();
+            if (hero.isDefence()) {
+                result.append("      D     ");
+            } else {
+                result.append("        ");
+            }
+
+            if (army.getAvailableHeroes().containsValue(hero)) {
+                result.append("     CA     |");
+            } else {
+                if(isRoundEnd){
+                    result.append("     CA     |");
+                }
+                else result.append("       W      |");
+            }
+
+        }
+        return result.toString();
+    }
+
+    public static String hpToStringForGraph(final Optional<Hero> optionalHero) {
+        final String result;
+        if (optionalHero.isEmpty()) {
+            result = String.format("%24s|", "");
+        } else {
+            final Hero hero = optionalHero.get();
+            result = String.format("  HP%5d/%5d |", hero.getHp(), hero.getHpMax());
+        }
+        return result;
+    }
+
+    public static String classToStringForGraph(final Optional<Hero> optionalHero) {
+        final String result;
+        if (optionalHero.isEmpty()) {
+            return String.format("%24s|", "");
+        }
+        return String.format("%18s|", optionalHero.get().getClassName());
+    }
+
     /**
      * Формируем 3 строки - первая с названием класса, вторая с текущим/маскимальным хп, третья со статусом действия
      */
@@ -145,7 +222,7 @@ public class CommonFunction {
             result = String.format("%12s|", "");
         } else {
             final Hero hero = optionalHero.get();
-            result = String.format("  HP%3d/%3d |", hero.getHp(), hero.getHpMax());
+            result = String.format(" HP%3d/%3d |", hero.getHp(), hero.getHpMax());
         }
         return result;
     }
