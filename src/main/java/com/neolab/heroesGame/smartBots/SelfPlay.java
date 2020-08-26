@@ -5,7 +5,6 @@ import com.neolab.heroesGame.arena.Army;
 import com.neolab.heroesGame.arena.BattleArena;
 import com.neolab.heroesGame.arena.StringArmyFactory;
 import com.neolab.heroesGame.client.ai.Player;
-import com.neolab.heroesGame.client.ai.PlayerBot;
 import com.neolab.heroesGame.enumerations.GameEvent;
 import com.neolab.heroesGame.errors.HeroExceptions;
 import com.neolab.heroesGame.server.answers.Answer;
@@ -153,19 +152,18 @@ public class SelfPlay {
         final long start = System.nanoTime();
 
         Player smartBot_minMax = new SmartBotMinMax(1, "smartBotMinMax");
-        Player smartBot_expert = new SmartBotExpert(1, "smartBotExpert");
-        //Player smartBot_v2 = new SmartBotMaxMax(2, "smartBotMaxMax");
-        Player randomBot = new PlayerBot(2, "randomBot");
-        SelfPlay selfPlay = new SelfPlay(smartBot_expert, randomBot);
+        Player smartBot_expert = new SmartBotExpert(2, "smartBotExpert");
+        //Player randomBot = new PlayerBot(2, "randomBot");
+        SelfPlay selfPlay = new SelfPlay(smartBot_expert, smartBot_minMax);
 
-        final int numGames = 1000;
+        final int numGames = 100;
         for (int i = 0; i < numGames; i++) {
            // System.out.println("************************* Началась игра *******************************");
            // System.out.println();
             if(i % 2 == 0){
-                selfPlay.prepareForBattle(randomBot, smartBot_expert);
+                selfPlay.prepareForBattle(smartBot_minMax, smartBot_expert);
             }
-            else selfPlay.prepareForBattle(smartBot_expert, randomBot);
+            else selfPlay.prepareForBattle(smartBot_expert, smartBot_minMax);
             selfPlay.gameProcess();
         }
 

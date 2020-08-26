@@ -10,7 +10,6 @@ import com.neolab.heroesGame.heroes.IWarlord;
 import com.neolab.heroesGame.heroes.Magician;
 import com.neolab.heroesGame.server.answers.Answer;
 
-import java.io.IOException;
 import java.util.Set;
 
 public class SmartBotExpert extends SmartBotBase {
@@ -25,26 +24,29 @@ public class SmartBotExpert extends SmartBotBase {
 
         final Set<SquareCoordinate> availableHeroes = getAvailableHeroes(board);
 
-        for(SquareCoordinate heroCoord : availableHeroes){
-            final Set<SquareCoordinate> availableTargets = getAvailableTargets(board, heroCoord);
-            Hero activeUnit = getHero(board, heroCoord, playerId);
+        SearchFilter condition;
+        Answer answer;
 
-            for(SquareCoordinate target : availableTargets){
-                Hero targetUnit = getHero(board, target, enemyId);
-                if(targetUnit.getHp() <= activeUnit.getDamage() - (activeUnit.getDamage() * targetUnit.getArmor())){
-                    return new Answer(heroCoord, HeroActions.ATTACK, target, this.getId());
-                }
-                else if(targetUnit instanceof IWarlord){
-                     return new Answer(heroCoord, HeroActions.ATTACK, target, this.getId());
-                }
-                else if(activeUnit instanceof Magician){
-                     return new Answer(heroCoord, HeroActions.ATTACK, target, this.getId());
-                }
-                else if(isMostWoundedUnit(board, availableTargets, targetUnit)){
-                     return new Answer(heroCoord, HeroActions.ATTACK, target, this.getId());
-                }
-            }
-        }
+        condition = (arena, availableTargets, activeUnit, targetUnit) -> canBeKilledNextAttack(activeUnit, targetUnit);
+        answer = getAnswerByCondition(board, availableHeroes, condition);
+        if(answer != null)
+            return answer;
+
+        condition = (arena, availableTargets, activeUnit, targetUnit) -> activeUnit instanceof Magician;
+        answer = getAnswerByCondition(board, availableHeroes, condition);
+        if(answer != null)
+            return answer;
+
+        condition = (arena, availableTargets, activeUnit, targetUnit) -> targetUnit instanceof IWarlord || targetUnit instanceof Magician;
+        answer = getAnswerByCondition(board, availableHeroes, condition);
+        if(answer != null)
+            return answer;
+
+        condition = (arena, availableTargets, activeUnit, targetUnit) -> isMostWoundedUnit(board, availableTargets, targetUnit);
+        answer = getAnswerByCondition(board, availableHeroes, condition);
+        if(answer != null)
+            return answer;
+
         return new PlayerBot(this.getId(), "bot").getAnswer(board);
     }
 
@@ -63,4 +65,26 @@ public class SmartBotExpert extends SmartBotBase {
         return mostWoundedUnit.equals(targetUnit);
     }
 
+    private boolean canBeKilledNextAttack(Hero activeUnit, Hero targetUnit){
+        return targetUnit.getHp() <= activeUnit.getDamage() - (activeUnit.getDamage() * targetUnit.getArmor());
+    }
+
+    private Answer getAnswerByCondition(BattleArena board, Set<SquareCoordinate> availableHeroes, SearchFilter condition) {
+        for(SquareCoordinate heroCoord : availableHeroes){
+            final Set<SquareCoordinate> availableTargets = getAvailableTargets(board, heroCoord);
+            Hero activeUnit = getHero(board, heroCoord, playerId);
+
+            for(SquareCoordinate target : availableTargets){
+                Hero targetUnit = getHero(board, target, enemyId);
+                if(condition.test(board, availableTargets, activeUnit, targetUnit)) {
+                    return new Answer(heroCoord, HeroActions.ATTACK, target, this.getId());
+                }
+            }
+        }
+        return null;
+    }
+
+    private interface SearchFilter{
+        boolean test(BattleArena board, Set<SquareCoordinate> availableTargets, Hero activeUnit, Hero targetUnit);
+    }
 }

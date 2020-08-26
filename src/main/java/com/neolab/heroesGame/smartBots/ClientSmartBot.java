@@ -19,12 +19,12 @@ public class ClientSmartBot {
     private final IGraphics gui;
 
     public ClientSmartBot(final int playerId, final String name) {
-        player = new SmartBotMinMax(playerId, name);
+        player = new SmartBotExpert(playerId, name);
         gui = new NullGraphics();
     }
 
     public ClientSmartBot(final int playerId, final String name, final IGraphics gui) {
-        player = new SmartBotMinMax(playerId, name);
+        player = new SmartBotExpert(playerId, name);
         this.gui = gui;
     }
 
@@ -114,7 +114,4 @@ public class ClientSmartBot {
         }
     }
 
-    public void setPlayerName(final String name) {
-        player.setName(name);
-    }
 }

@@ -72,7 +72,7 @@ public class PlayerBot extends Player {
     }
 
     public String getStringArmyFirst(final int armySize) {
-        switch (armySize){
+        /*switch (armySize){
             case 1 -> {
                 return "    F ";
             }
@@ -97,10 +97,10 @@ public class PlayerBot extends Player {
                 return null;
             }
 
-        }
+        }**/
 
-//        final List<String> armies = CommonFunction.getAllAvailableArmiesCode(armySize);
-//        return armies.get(RANDOM.nextInt(armies.size()));
+        final List<String> armies = CommonFunction.getAllAvailableArmiesCode(armySize);
+        return armies.get(RANDOM.nextInt(armies.size()));
     }
 
     public String getStringArmySecond(final int armySize, final Army army) {

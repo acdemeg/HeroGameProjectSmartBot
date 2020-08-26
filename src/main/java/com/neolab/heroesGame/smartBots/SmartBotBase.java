@@ -13,7 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 public class SmartBotBase extends Player {
     private static final Logger LOGGER = LoggerFactory.getLogger(SmartBotBase.class);
@@ -34,7 +36,7 @@ public class SmartBotBase extends Player {
         super(id, name);
     }
 
-    public Answer getAnswer(final BattleArena board) throws IOException, HeroExceptions { return null; };
+    public Answer getAnswer(final BattleArena board) throws IOException, HeroExceptions { return null; }
 
     protected WinCollector getAnswerByGameTree(final BattleArena board) throws HeroExceptions, IOException { return null; }
 
@@ -219,8 +221,6 @@ public class SmartBotBase extends Player {
             }
 
         }
-//        final List<String> armies = CommonFunction.getAllAvailableArmiesCode(armySize);
-//        return armies.get(new Random(5916).nextInt(armies.size()));
     }
 
     public String getStringArmySecond(final int armySize, final Army army) {
