@@ -207,11 +207,13 @@ public class SmartBotBase extends Player {
                 return "   Fff";
             }
             case 4 -> {
-                return "M  fff";
+                //return "M  fff";
+                return "Mmm f ";
             }
 
             case 5 -> {
-                return "Mm fff";
+                //return "Mm fff";
+                return "Mmmff ";
             }
             case 6 -> {
                 return "Mmmfff";

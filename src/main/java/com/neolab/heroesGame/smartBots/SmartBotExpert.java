@@ -39,12 +39,12 @@ public class SmartBotExpert extends SmartBotBase {
 
         condition = (arena, availableTargets, activeUnit, targetUnit) -> targetUnit instanceof IWarlord || targetUnit instanceof Magician;
         answer = getAnswerByCondition(board, availableHeroes, condition);
-        if(answer != null)
+        if(answer != null && !getHero(board, answer.getTargetUnitCoordinate(), enemyId).isDefence())
             return answer;
 
         condition = (arena, availableTargets, activeUnit, targetUnit) -> isMostWoundedUnit(board, availableTargets, targetUnit);
         answer = getAnswerByCondition(board, availableHeroes, condition);
-        if(answer != null)
+        if(answer != null && !getHero(board, answer.getTargetUnitCoordinate(), enemyId).isDefence())
             return answer;
 
         return new PlayerBot(this.getId(), "bot").getAnswer(board);
